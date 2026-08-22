@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#334155',
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
   },
   nodeCompleted: {
     backgroundColor: '#10B981',

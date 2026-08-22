@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     height: 16,
     borderWidth: 1.5,
     alignItems: 'center',
-    justify.content: 'center',
+    justifyContent: 'center',
     borderRadius: 3,
   },
   borderVeg: {
