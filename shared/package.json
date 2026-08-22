@@ -1,0 +1,14 @@
+{
+  "name": "@restaurant-delivery/shared",
+  "version": "1.0.0",
+  "description": "Shared TypeScript types and constants for the restaurant delivery platform",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "private": true,
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}
