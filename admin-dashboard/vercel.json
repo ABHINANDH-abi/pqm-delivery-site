@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "qureshi-mandi-admin",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

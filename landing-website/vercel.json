@@ -1,0 +1,20 @@
+{
+  "version": 2,
+  "name": "qureshi-mandi-landing",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*).apk",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/vnd.android.package-archive"
+        },
+        {
+          "key": "Content-Disposition",
+          "value": "attachment"
+        }
+      ]
+    }
+  ]
+}
