@@ -411,12 +411,12 @@ const styles = StyleSheet.create({
   cardContent: {
     flex: 1,
     padding: 12,
-    justify.content: 'space-between',
+    justifyContent: 'space-between',
   },
   cardHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justify.content: 'space-between',
+    justifyContent: 'space-between',
   },
   vegDotBorder: {
     width: 16,
@@ -460,7 +460,7 @@ const styles = StyleSheet.create({
   },
   cardFooter: {
     flexDirection: 'row',
-    justify.content: 'space-between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
   },
@@ -500,7 +500,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 14,
     flexDirection: 'row',
-    justify.content: 'space-between',
+    justifyContent: 'space-between',
     alignItems: 'center',
     shadowColor: '#F59E0B',
     shadowOffset: { width: 0, height: 6 },
