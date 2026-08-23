@@ -2,6 +2,7 @@
   "version": 2,
   "name": "qureshi-mandi-landing",
   "cleanUrls": true,
+  "outputDirectory": ".",
   "headers": [
     {
       "source": "/(.*).apk",
