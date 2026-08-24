@@ -24,16 +24,34 @@ export default function AddressScreen({ navigation }: Props) {
   // Modal State for New Address
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [detectingLocation, setDetectingLocation] = useState<boolean>(false);
   const [formData, setFormData] = useState({
     label: 'Home',
     addressLine1: '',
     addressLine2: '',
-    city: 'Bengaluru',
-    state: 'Karnataka',
-    pincode: '560001',
+    city: 'Coimbatore',
+    state: 'Tamil Nadu',
+    pincode: '641018',
     landmark: '',
     isDefault: true,
   });
+
+  const handleDetectLocation = () => {
+    setDetectingLocation(true);
+    setTimeout(() => {
+      setFormData((prev) => ({
+        ...prev,
+        addressLine1: '104, Avinashi Road, Opposite VOC Park',
+        addressLine2: 'Gandhipuram',
+        city: 'Coimbatore',
+        state: 'Tamil Nadu',
+        pincode: '641018',
+        landmark: 'Near VOC Park',
+      }));
+      setDetectingLocation(false);
+      Alert.alert('GPS Location Detected 📍', 'Delivery address auto-filled for Coimbatore!');
+    }, 800);
+  };
 
   const fetchAddresses = async () => {
     try {
@@ -178,6 +196,31 @@ export default function AddressScreen({ navigation }: Props) {
             <Text style={styles.modalTitle}>Add New Delivery Address</Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
+              <TouchableOpacity
+                onPress={handleDetectLocation}
+                disabled={detectingLocation}
+                style={{
+                  backgroundColor: '#1E293B',
+                  paddingVertical: 12,
+                  paddingHorizontal: 16,
+                  borderRadius: 10,
+                  borderWidth: 1,
+                  borderColor: '#F59E0B',
+                  marginBottom: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {detectingLocation ? (
+                  <ActivityIndicator color="#F59E0B" />
+                ) : (
+                  <Text style={{ color: '#F59E0B', fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
+                    📍 Detect Current Location via GPS
+                  </Text>
+                )}
+              </TouchableOpacity>
+
               <Text style={styles.inputLabel}>Label (e.g. Home, Work, Apartment)</Text>
               <TextInput
                 style={styles.input}

@@ -9,6 +9,7 @@ import {
   Switch,
   ActivityIndicator,
   Alert,
+  Linking,
 } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
 import { deliveryApi, DeliveryOrder, OrderStatus } from '../../api/delivery.api';
@@ -177,7 +178,20 @@ export default function DeliveryHomeScreen() {
 
                   {/* Address Snapshot */}
                   <View style={styles.infoSection}>
-                    <Text style={styles.sectionLabel}>DELIVERY ADDRESS 📍</Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <Text style={styles.sectionLabel}>DELIVERY ADDRESS 📍</Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.deliveryAddressText)}`;
+                          Linking.openURL(mapsUrl).catch(() => {
+                            Alert.alert('Error', 'Unable to open Google Maps on device');
+                          });
+                        }}
+                        style={{ backgroundColor: '#1E293B', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1, borderColor: '#334155' }}
+                      >
+                        <Text style={{ color: '#38BDF8', fontSize: 11, fontWeight: '700' }}>🗺️ Open Google Maps</Text>
+                      </TouchableOpacity>
+                    </View>
                     <Text style={styles.addressText}>{order.deliveryAddressText}</Text>
                   </View>
 
