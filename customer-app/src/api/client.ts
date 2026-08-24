@@ -2,7 +2,7 @@ import axios from 'axios';
 import { tokenStorage } from '../utils/secureStorage';
 
 export const apiClient = axios.create({
-  baseURL: process.env['EXPO_PUBLIC_API_BASE_URL'] ?? 'http://localhost:4000/api/v1',
+  baseURL: process.env['EXPO_PUBLIC_API_BASE_URL'] ?? 'http://192.168.1.4:4000/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
