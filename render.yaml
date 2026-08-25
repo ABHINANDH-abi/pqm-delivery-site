@@ -2,6 +2,7 @@ services:
   - type: web
     name: qureshi-mandi-backend
     env: node
+    plan: free
     rootDir: backend
     buildCommand: npm install && npx prisma generate && npm run build
     startCommand: npx prisma db push --accept-data-loss && npx prisma db seed && npm start
@@ -23,3 +24,4 @@ databases:
   - name: qureshi-mandi-db
     databaseName: qureshimandidb
     user: qureshimandiuser
+    plan: free
