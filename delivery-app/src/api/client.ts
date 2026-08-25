@@ -10,9 +10,10 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 45000,
 });
 
+// Automatic auth token header interceptor
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await tokenStorage.getAccessToken();
@@ -24,17 +25,47 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
+// Response interceptor: handle 401 and token refresh
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (err: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token!);
+    }
+  });
+  failedQueue = [];
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (originalRequest.url?.includes('/auth/login')) {
+      if (originalRequest.url?.includes('/auth/login') || originalRequest.url?.includes('/auth/register')) {
         return Promise.reject(error);
       }
 
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         const refreshToken = await tokenStorage.getRefreshToken();
@@ -50,25 +81,16 @@ apiClient.interceptors.response.use(
         const newAccessToken = res.data.data.accessToken;
         await tokenStorage.setAccessToken(newAccessToken);
 
+        processQueue(null, newAccessToken);
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return apiClient(originalRequest);
       } catch (refreshError) {
+        processQueue(refreshError, null);
         await tokenStorage.clearTokens();
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
-    }
-
-    if ((error.code === 'ERR_NETWORK' || !error.response) && !originalRequest._networkRetried) {
-      originalRequest._networkRetried = true;
-      const currentUrl = originalRequest.baseURL || apiClient.defaults.baseURL || '';
-      if (currentUrl.includes('10.0.2.2')) {
-        originalRequest.baseURL = FALLBACK_URL;
-      } else if (currentUrl.includes('192.168.1.4')) {
-        originalRequest.baseURL = LOCALHOST_URL;
-      } else {
-        originalRequest.baseURL = PRIMARY_URL;
-      }
-      return apiClient(originalRequest);
     }
 
     return Promise.reject(error);

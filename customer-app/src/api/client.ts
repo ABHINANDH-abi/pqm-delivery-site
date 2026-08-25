@@ -10,10 +10,10 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 45000,
 });
 
-// Automatic fallback interceptor for Android Studio emulator (10.0.2.2) and physical phone Wi-Fi (192.168.1.4)
+// Automatic auth token header interceptor
 apiClient.interceptors.request.use(
   async (config) => {
     const token = await tokenStorage.getAccessToken();
@@ -91,20 +91,6 @@ apiClient.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
-    }
-
-    // Handle Network Error by attempting alternate host (10.0.2.2 -> 192.168.1.4 -> localhost)
-    if ((error.code === 'ERR_NETWORK' || !error.response) && !originalRequest._networkRetried) {
-      originalRequest._networkRetried = true;
-      const currentUrl = originalRequest.baseURL || apiClient.defaults.baseURL || '';
-      if (currentUrl.includes('10.0.2.2')) {
-        originalRequest.baseURL = FALLBACK_URL;
-      } else if (currentUrl.includes('192.168.1.4')) {
-        originalRequest.baseURL = LOCALHOST_URL;
-      } else {
-        originalRequest.baseURL = PRIMARY_URL;
-      }
-      return apiClient(originalRequest);
     }
 
     return Promise.reject(error);
