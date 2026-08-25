@@ -15,11 +15,11 @@ export const tokenStorage = {
 };
 
 export const apiClient = axios.create({
-  baseURL: import.meta.env['VITE_API_BASE_URL'] ?? 'http://localhost:4000/api/v1',
+  baseURL: import.meta.env['VITE_API_BASE_URL'] ?? 'https://qureshi-mandi-backend.onrender.com/api/v1',
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000,
 });
 
 apiClient.interceptors.request.use(

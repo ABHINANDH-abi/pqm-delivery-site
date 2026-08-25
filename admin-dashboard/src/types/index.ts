@@ -9,5 +9,19 @@ export type {
   PaginationMeta,
   PaginatedResponse,
 } from '../../../shared/src/types/api.types';
-export { UserRole } from '../../../shared/src/constants/roles';
-export { OrderStatus } from '../../../shared/src/constants/order-status';
+
+export enum UserRole {
+  CUSTOMER = 'CUSTOMER',
+  ADMIN = 'ADMIN',
+  DELIVERY_PARTNER = 'DELIVERY_PARTNER',
+}
+
+export enum OrderStatus {
+  PENDING = 'PENDING',
+  CONFIRMED = 'CONFIRMED',
+  PREPARING = 'PREPARING',
+  READY = 'READY',
+  OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
+  DELIVERED = 'DELIVERED',
+  CANCELLED = 'CANCELLED',
+}
