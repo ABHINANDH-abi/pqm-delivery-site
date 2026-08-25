@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { useCartStore } from '../../store/cart.store';
 import { addressApi, Address } from '../../api/address.api';
@@ -33,7 +34,7 @@ export default function CartScreen({ navigation }: Props) {
 
   const [addresses, setAddresses] = useState<Address[]>([]);
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'RAZORPAY'>('CASH_ON_DELIVERY');
+  const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'UPI_GPAY' | 'RAZORPAY'>('UPI_GPAY');
   const [submitting, setSubmitting] = useState<boolean>(false);
 
   const fetchAddresses = async () => {
@@ -73,11 +74,30 @@ export default function CartScreen({ navigation }: Props) {
       const order = await ordersApi.create({
         addressId: selectedAddress.id,
         items: items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
-        paymentMethod,
+        paymentMethod: paymentMethod === 'UPI_GPAY' ? 'RAZORPAY' : paymentMethod,
       });
 
-      // 2. If Razorpay selected, process online payment verification
-      if (paymentMethod === 'RAZORPAY') {
+      // 2. Direct Google Pay / UPI Intent launch showing exact bill total
+      if (paymentMethod === 'UPI_GPAY') {
+        const orderShortId = order.id ? order.id.slice(-6) : 'QM';
+        const upiUrl = `upi://pay?pa=qureshimandi@upi&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+
+        try {
+          const supported = await Linking.canOpenURL(upiUrl);
+          if (supported) {
+            await Linking.openURL(upiUrl);
+          } else {
+            // Fallback try direct gpay:// scheme
+            const gpayUrl = `gpay://upi/pay?pa=qureshimandi@upi&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+            await Linking.openURL(gpayUrl);
+          }
+        } catch {
+          Alert.alert(
+            'Online UPI Payment',
+            `Order #${orderShortId} created!\n\nPlease complete your ₹${total} payment to UPI ID:\nqureshimandi@upi`,
+          );
+        }
+      } else if (paymentMethod === 'RAZORPAY') {
         const rzpData = await paymentsApi.createRazorpayOrder(order.id);
 
         await paymentsApi.verifyPayment({
@@ -213,6 +233,27 @@ export default function CartScreen({ navigation }: Props) {
               <TouchableOpacity
                 style={[
                   styles.paymentOption,
+                  paymentMethod === 'UPI_GPAY' && styles.paymentOptionActive,
+                ]}
+                onPress={() => setPaymentMethod('UPI_GPAY')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.paymentEmoji}>⚡</Text>
+                <View style={styles.paymentDetails}>
+                  <Text style={styles.paymentTitle}>Google Pay / PhonePe / UPI</Text>
+                  <Text style={styles.paymentSub}>Instant redirect to GPay with exact bill amount</Text>
+                </View>
+                <View
+                  style={[
+                    styles.radioCircle,
+                    paymentMethod === 'UPI_GPAY' && styles.radioActive,
+                  ]}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.paymentOption,
                   paymentMethod === 'CASH_ON_DELIVERY' && styles.paymentOptionActive,
                 ]}
                 onPress={() => setPaymentMethod('CASH_ON_DELIVERY')}
@@ -241,7 +282,7 @@ export default function CartScreen({ navigation }: Props) {
               >
                 <Text style={styles.paymentEmoji}>💳</Text>
                 <View style={styles.paymentDetails}>
-                  <Text style={styles.paymentTitle}>Razorpay Online Payment</Text>
+                  <Text style={styles.paymentTitle}>Razorpay Online Gateway</Text>
                   <Text style={styles.paymentSub}>UPI, Debit/Credit Card, NetBanking</Text>
                 </View>
                 <View
