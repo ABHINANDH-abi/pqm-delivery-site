@@ -262,8 +262,8 @@ export const OrdersPage: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {orders.map((order) => {
-                  const driverName = order.deliveryPartner?.user?.name || (order.status !== 'PLACED' && order.status !== 'CANCELLED' ? 'Ramesh Kumar (Express Rider)' : null);
-                  const driverPhone = order.deliveryPartner?.user?.phone || '+91 98765 43212';
+                  const driverName = order.deliveryPartner?.user?.name || null;
+                  const driverPhone = order.deliveryPartner?.user?.phone || null;
 
                   return (
                     <tr key={order.id} className="hover:bg-slate-800/40 transition">
@@ -294,13 +294,15 @@ export const OrdersPage: React.FC = () => {
                       <td className="px-6 py-4">
                         {driverName ? (
                           <div>
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg text-xs font-bold">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold">
                               🛵 {driverName}
                             </span>
-                            <p className="text-slate-400 text-xs mt-1 font-mono">{driverPhone}</p>
+                            {driverPhone && <p className="text-slate-400 text-xs mt-1 font-mono">{driverPhone}</p>}
                           </div>
                         ) : (
-                          <span className="text-xs text-slate-500 italic">⏳ Awaiting Rider Acceptance</span>
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-800 border border-slate-700 text-slate-400 rounded-lg text-xs font-medium">
+                            ⏳ Awaiting Acceptance by Delivery Partner
+                          </span>
                         )}
                       </td>
                       <td className="px-6 py-4">
@@ -369,6 +371,35 @@ export const OrdersPage: React.FC = () => {
                 <span className="text-slate-400 font-semibold block mb-1">DELIVERY ADDRESS</span>
                 <span className="text-slate-300">{viewingOrder.deliveryAddressText}</span>
               </div>
+            </div>
+
+            {/* Assigned Rider Details */}
+            <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+              <span className="text-slate-400 font-semibold text-xs block mb-1 uppercase tracking-wider">
+                ASSIGNED RIDER STATUS
+              </span>
+              {viewingOrder.deliveryPartner?.user?.name ? (
+                <div className="flex items-center justify-between text-xs">
+                  <div>
+                    <p className="text-white font-bold flex items-center gap-1">
+                      🛵 {viewingOrder.deliveryPartner.user.name}
+                    </p>
+                    <p className="text-amber-400 font-mono mt-0.5">
+                      {viewingOrder.deliveryPartner.user.phone || 'N/A'}
+                    </p>
+                  </div>
+                  <span className="px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded-full font-bold text-[10px]">
+                    ACCEPTED
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400 italic">⏳ Awaiting Acceptance by Delivery Partner</span>
+                  <span className="px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-full font-bold text-[10px]">
+                    UNASSIGNED
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Items Breakdown */}
