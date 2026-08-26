@@ -14,8 +14,11 @@ export const tokenStorage = {
   },
 };
 
+const PRIMARY_URL = import.meta.env['VITE_API_BASE_URL'] ?? 'https://qureshi-mandi-backend.onrender.com/api/v1';
+const FALLBACK_URL = 'http://localhost:4000/api/v1';
+
 export const apiClient = axios.create({
-  baseURL: import.meta.env['VITE_API_BASE_URL'] ?? 'https://qureshi-mandi-backend.onrender.com/api/v1',
+  baseURL: PRIMARY_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -66,6 +69,19 @@ apiClient.interceptors.response.use(
         window.location.href = '/login';
         return Promise.reject(refreshError);
       }
+    }
+
+    // Auto-failover retry if primary host is unreachable or DNS drops
+    if ((error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || !error.response) && !originalRequest._networkRetried) {
+      originalRequest._networkRetried = true;
+      const currentUrl = originalRequest.baseURL || apiClient.defaults.baseURL || '';
+
+      if (currentUrl.includes('onrender.com')) {
+        originalRequest.baseURL = FALLBACK_URL;
+      } else {
+        originalRequest.baseURL = PRIMARY_URL;
+      }
+      return apiClient(originalRequest);
     }
 
     return Promise.reject(error);
