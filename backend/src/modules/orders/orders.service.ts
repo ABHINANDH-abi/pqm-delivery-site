@@ -353,6 +353,112 @@ export class OrdersService {
       },
     });
   }
+
+  /**
+   * Customer order modification (allowed before OUT_FOR_DELIVERY status)
+   */
+  async editOrder(
+    orderId: string,
+    customerId: string,
+    input: {
+      notes?: string;
+      items?: { productId: string; quantity: number }[];
+      addressId?: string;
+    }
+  ) {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!order) {
+      throw new NotFoundError('Order not found');
+    }
+
+    if (order.customerId !== customerId) {
+      throw new ForbiddenError('Access denied to edit this order');
+    }
+
+    const uneditableStatuses: OrderStatus[] = [
+      OrderStatus.OUT_FOR_DELIVERY,
+      OrderStatus.DELIVERED,
+      OrderStatus.CANCELLED,
+      OrderStatus.REJECTED,
+    ];
+
+    if (uneditableStatuses.includes(order.status)) {
+      throw new BadRequestError('Order can no longer be edited once it is Out for Delivery');
+    }
+
+    let subtotal = Number(order.subtotal);
+    let deliveryFee = Number(order.deliveryFee);
+    let addressText = order.deliveryAddressText;
+    let deliveryAddressId = order.deliveryAddressId;
+
+    if (input.addressId) {
+      const address = await prisma.address.findUnique({ where: { id: input.addressId } });
+      if (address && address.userId === customerId) {
+        deliveryAddressId = address.id;
+        addressText = `${address.label}: ${address.addressLine1}${
+          address.addressLine2 ? ', ' + address.addressLine2 : ''
+        }, ${address.city}, ${address.state} - ${address.pincode}`;
+        deliveryFee = calculateKmDeliveryFee(address.latitude, address.longitude);
+      }
+    }
+
+    if (input.items && input.items.length > 0) {
+      const productIds = input.items.map((i) => i.productId);
+      const products = await prisma.product.findMany({ where: { id: { in: productIds } } });
+
+      if (products.length === productIds.length) {
+        subtotal = 0;
+        const newOrderItems = input.items.map((item) => {
+          const product = products.find((p) => p.id === item.productId)!;
+          const unitPrice = Number(product.price);
+          const totalPrice = unitPrice * item.quantity;
+          subtotal += totalPrice;
+
+          return {
+            productId: product.id,
+            productName: product.name,
+            unitPrice,
+            quantity: item.quantity,
+            totalPrice,
+          };
+        });
+
+        await prisma.orderItem.deleteMany({ where: { orderId } });
+        await prisma.orderItem.createMany({
+          data: newOrderItems.map((ni) => ({ ...ni, orderId })),
+        });
+      }
+    }
+
+    const taxAmount = Math.round(subtotal * TAX_RATE);
+    const totalAmount = subtotal + deliveryFee + taxAmount;
+
+    return prisma.order.update({
+      where: { id: orderId },
+      data: {
+        subtotal,
+        deliveryFee,
+        totalAmount,
+        deliveryAddressId,
+        deliveryAddressText: addressText,
+        notes: input.notes !== undefined ? input.notes : order.notes,
+      },
+      include: {
+        items: true,
+        payment: true,
+        customer: true,
+        deliveryPartner: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+  }
 }
 
 export const ordersService = new OrdersService();

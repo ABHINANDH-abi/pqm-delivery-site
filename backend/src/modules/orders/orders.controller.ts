@@ -75,6 +75,18 @@ export class OrdersController {
       next(error);
     }
   }
+
+  async edit(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const customerId = req.user!.userId;
+
+      const order = await ordersService.editOrder(id!, customerId, req.body);
+      return sendSuccess(res, order, 'Order updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const ordersController = new OrdersController();

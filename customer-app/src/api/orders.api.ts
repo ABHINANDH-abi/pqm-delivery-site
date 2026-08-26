@@ -85,4 +85,12 @@ export const ordersApi = {
     const res = await apiClient.post(`/orders/${id}/rating`, { rating, feedback });
     return res.data.data;
   },
+
+  editOrder: async (
+    id: string,
+    data: { notes?: string; items?: { productId: string; quantity: number }[]; addressId?: string }
+  ): Promise<Order> => {
+    const res = await apiClient.patch(`/orders/${id}`, data);
+    return res.data.data;
+  },
 };

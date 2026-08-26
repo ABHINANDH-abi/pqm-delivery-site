@@ -28,4 +28,7 @@ router.post('/:id/cancel', ordersController.cancel);
 // Customer order rating & feedback
 router.post('/:id/rating', ordersController.rate);
 
+// Customer order edit (before OUT_FOR_DELIVERY)
+router.patch('/:id', ordersController.edit);
+
 export default router;

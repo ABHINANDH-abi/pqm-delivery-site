@@ -135,6 +135,27 @@ export default function OrderHistoryScreen({ navigation }: Props) {
                   </Text>
                 </TouchableOpacity>
 
+                {/* Active Order Edit Option (allowed before OUT_FOR_DELIVERY) */}
+                {!['OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED', 'REJECTED'].includes(order.status) && (
+                  <TouchableOpacity
+                    style={{
+                      marginTop: 10,
+                      backgroundColor: 'rgba(56, 189, 248, 0.15)',
+                      borderWidth: 1,
+                      borderColor: '#38BDF8',
+                      paddingVertical: 8,
+                      borderRadius: 10,
+                      alignItems: 'center',
+                    }}
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
+                  >
+                    <Text style={{ color: '#38BDF8', fontWeight: '800', fontSize: 12 }}>
+                      ✏️ Edit Order Items & Notes
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
                 {/* Delivered Rating Section */}
                 {order.status === 'DELIVERED' && (
                   <View style={styles.ratingSectionContainer}>
