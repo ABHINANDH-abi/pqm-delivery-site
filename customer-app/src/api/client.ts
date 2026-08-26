@@ -93,6 +93,21 @@ apiClient.interceptors.response.use(
       }
     }
 
+    // Automatic failover retry if primary host is unreachable or DNS fails on Android emulator
+    if ((error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || !error.response) && !originalRequest._networkRetried) {
+      originalRequest._networkRetried = true;
+      const currentUrl = originalRequest.baseURL || apiClient.defaults.baseURL || '';
+
+      if (currentUrl.includes('onrender.com')) {
+        originalRequest.baseURL = FALLBACK_URL;
+      } else if (currentUrl.includes('192.168.1.4')) {
+        originalRequest.baseURL = LOCALHOST_URL;
+      } else {
+        originalRequest.baseURL = PRIMARY_URL;
+      }
+      return apiClient(originalRequest);
+    }
+
     return Promise.reject(error);
   },
 );
