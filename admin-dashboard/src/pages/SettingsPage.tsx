@@ -1,23 +1,47 @@
-import React, { useState } from 'react';
-import { Settings, Store, Clock, Phone, MapPin, Save, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Settings, Store, Clock, Save, Check } from 'lucide-react';
+
+const STORAGE_KEY_SETTINGS = 'rd_admin_restaurant_settings';
 
 export const SettingsPage: React.FC = () => {
   const [saved, setSaved] = useState(false);
   const [formData, setFormData] = useState({
-    restaurantName: 'PQM Kitchen & Gourmet Pizza',
+    restaurantName: 'Qureshi Mandi Coimbatore',
     phone: '+91 98765 43210',
-    email: 'contact@pqmkitchen.com',
-    address: '12, MG Road, Indiranagar, Bengaluru, Karnataka 560001',
-    openingHours: '10:00 AM - 11:30 PM',
+    email: 'contact@qureshimandi.com',
+    address: '12, Qureshi Mandi Road, Coimbatore, Tamil Nadu 641001',
+    openingHours: '11:00 AM - 11:00 PM',
     taxRatePercent: 5,
-    flatDeliveryFee: 40,
+    flatDeliveryFee: 50,
     isAcceptingOrders: true,
+    merchantUpiId: 'qureshimandi@upi',
+    payeeName: 'Qureshi Mandi Coimbatore',
+    bankAccountNumber: '923010045892147',
+    bankIfscCode: 'UTIB0001892',
   });
+
+  // Load saved settings on mount
+  useEffect(() => {
+    try {
+      const savedData = localStorage.getItem(STORAGE_KEY_SETTINGS);
+      if (savedData) {
+        const parsed = JSON.parse(savedData);
+        setFormData((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch (err) {
+      console.log('Error loading saved settings:', err);
+    }
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(formData));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 4000);
+    } catch (err) {
+      alert('Failed to save settings to storage');
+    }
   };
 
   return (
@@ -27,16 +51,16 @@ export const SettingsPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <Settings className="w-7 h-7 text-amber-500" />
-            Restaurant Settings
+            Restaurant & Payment Settings
           </h1>
           <p className="text-slate-400 text-sm mt-1">
-            Configure restaurant identity, operating hours, delivery fees, and order acceptance
+            Configure restaurant identity, operating hours, merchant UPI ID, and bank account destination
           </p>
         </div>
 
         {saved && (
           <div className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold rounded-xl animate-in fade-in">
-            <Check className="w-4 h-4" /> Settings Saved Successfully!
+            <Check className="w-4 h-4" /> Restaurant Settings & Bank Info Saved!
           </div>
         )}
       </div>
@@ -108,7 +132,7 @@ export const SettingsPage: React.FC = () => {
 
             <div>
               <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
-                Flat Delivery Fee (₹)
+                Base Delivery Fee (₹)
               </label>
               <input
                 type="number"
@@ -148,7 +172,8 @@ export const SettingsPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                defaultValue="qureshimandi@upi"
+                value={formData.merchantUpiId}
+                onChange={(e) => setFormData({ ...formData, merchantUpiId: e.target.value })}
                 placeholder="e.g. 9876543210@okbizaxis or shopname@icici"
                 className="w-full bg-slate-950 border border-amber-500/50 text-amber-400 font-mono font-bold rounded-xl px-4 py-2.5 focus:outline-none text-sm"
               />
@@ -163,7 +188,8 @@ export const SettingsPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                defaultValue="Qureshi Mandi Coimbatore"
+                value={formData.payeeName}
+                onChange={(e) => setFormData({ ...formData, payeeName: e.target.value })}
                 className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500 text-sm"
               />
             </div>
@@ -174,7 +200,8 @@ export const SettingsPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                defaultValue="923010045892147"
+                value={formData.bankAccountNumber}
+                onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value })}
                 placeholder="e.g. 918020034921"
                 className="w-full bg-slate-950 border border-slate-800 text-white font-mono text-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500 text-sm"
               />
@@ -186,7 +213,8 @@ export const SettingsPage: React.FC = () => {
               </label>
               <input
                 type="text"
-                defaultValue="UTIB0001892"
+                value={formData.bankIfscCode}
+                onChange={(e) => setFormData({ ...formData, bankIfscCode: e.target.value })}
                 placeholder="e.g. HDFC0001234"
                 className="w-full bg-slate-950 border border-slate-800 text-white font-mono text-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500 text-sm"
               />
