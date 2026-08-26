@@ -107,14 +107,6 @@ export default function HomeScreen({ navigation }: Props) {
         </View>
 
         <View style={styles.headerRight}>
-          <TouchableOpacity
-            style={styles.ordersButton}
-            onPress={() => navigation.navigate('OrderHistory')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.ordersText}>Orders 📜</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.logoutButton} onPress={logout} activeOpacity={0.8}>
             <Text style={styles.logoutText}>Logout</Text>
           </TouchableOpacity>
