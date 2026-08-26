@@ -88,6 +88,18 @@ export const DeliveryPartnersPage: React.FC = () => {
           cashCollected: 0,
           deliveredOrders: [],
         },
+        'driver-2': {
+          driverId: 'driver-2',
+          name: 'Suresh Kumar (Fast Express)',
+          email: 'driver2@example.com',
+          phone: '+91 98765 88888',
+          vehicleType: 'Scooter / EV Bike',
+          isAvailable: true,
+          totalEarnings: 0,
+          completedOrdersCount: 0,
+          cashCollected: 0,
+          deliveredOrders: [],
+        },
       };
 
       // Populate driver statistics from actual delivered orders
@@ -95,7 +107,9 @@ export const DeliveryPartnersPage: React.FC = () => {
         const fee = typeof order.deliveryFee === 'string' ? parseFloat(order.deliveryFee) : order.deliveryFee || 50;
         const total = typeof order.totalAmount === 'string' ? parseFloat(order.totalAmount) : order.totalAmount || 0;
 
-        const targetDriver = driverMap['driver-1']!;
+        const driverIdKey = order.deliveryPartnerId === 'driver-2' ? 'driver-2' : 'driver-1';
+        const targetDriver = driverMap[driverIdKey] || driverMap['driver-1']!;
+
         if (order.status === 'DELIVERED') {
           targetDriver.completedOrdersCount += 1;
           targetDriver.totalEarnings += fee;

@@ -29,36 +29,68 @@ async function main(): Promise<void> {
     console.log('✅ Created default admin user: admin@restaurant.com / Admin@123456');
   }
 
-  // Default Delivery Partner
-  const deliveryEmail = 'delivery@restaurant.com';
+  // Default Delivery Partner 1
+  const deliveryEmail = 'driver@example.com';
   const existingDelivery = await prisma.user.findUnique({
     where: { email: deliveryEmail },
   });
 
   if (!existingDelivery) {
     const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash('Delivery@123456', salt);
+    const passwordHash = await bcrypt.hash('Driver@123456', salt);
 
     await prisma.user.create({
       data: {
-        name: 'Ramesh Rider',
+        name: 'Ramesh Kumar (Express Rider)',
         email: deliveryEmail,
-        phone: '+919876543210',
+        phone: '+919876543299',
         passwordHash,
         role: 'DELIVERY_PARTNER',
         isActive: true,
         isEmailVerified: true,
         deliveryProfile: {
           create: {
-            vehicleType: 'BIKE',
-            vehicleNumber: 'KA-01-AB-1234',
+            vehicleType: 'Motorcycle / Scooter',
+            vehicleNumber: 'TN-37-AB-1234',
             isVerified: true,
             status: 'AVAILABLE',
           },
         },
       },
     });
-    console.log('✅ Created default delivery partner: delivery@restaurant.com / Delivery@123456');
+    console.log('✅ Created default delivery partner 1: driver@example.com / Driver@123456');
+  }
+
+  // Delivery Partner 2 (Suresh Kumar)
+  const deliveryEmail2 = 'driver2@example.com';
+  const existingDelivery2 = await prisma.user.findUnique({
+    where: { email: deliveryEmail2 },
+  });
+
+  if (!existingDelivery2) {
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash('Driver@123456', salt);
+
+    await prisma.user.create({
+      data: {
+        name: 'Suresh Kumar (Fast Express)',
+        email: deliveryEmail2,
+        phone: '+919876588888',
+        passwordHash,
+        role: 'DELIVERY_PARTNER',
+        isActive: true,
+        isEmailVerified: true,
+        deliveryProfile: {
+          create: {
+            vehicleType: 'Scooter / EV Bike',
+            vehicleNumber: 'TN-37-XY-5678',
+            isVerified: true,
+            status: 'AVAILABLE',
+          },
+        },
+      },
+    });
+    console.log('✅ Created delivery partner 2: driver2@example.com / Driver@123456');
   }
 
   // Default Customer User
