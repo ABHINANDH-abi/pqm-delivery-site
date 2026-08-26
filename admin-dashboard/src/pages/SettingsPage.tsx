@@ -132,6 +132,68 @@ export const SettingsPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Bank Account & UPI Payment Destination Settings */}
+        <div className="bg-slate-900 rounded-2xl p-6 border border-slate-800 shadow-xl space-y-4">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span className="text-amber-500 text-xl">💳</span> Bank Account & UPI Payment Destination
+          </h3>
+          <p className="text-xs text-slate-400">
+            Configure the UPI ID and Bank Account where 100% of customer online payments will be transferred directly.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-semibold uppercase text-amber-400 mb-1">
+                Merchant UPI ID / VPA (Google Pay / PhonePe VPA)
+              </label>
+              <input
+                type="text"
+                defaultValue="qureshimandi@upi"
+                placeholder="e.g. 9876543210@okbizaxis or shopname@icici"
+                className="w-full bg-slate-950 border border-amber-500/50 text-amber-400 font-mono font-bold rounded-xl px-4 py-2.5 focus:outline-none text-sm"
+              />
+              <span className="text-[11px] text-slate-500 mt-1 block">
+                Direct UPI address receiving customer funds (0% MDR fee).
+              </span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                Payee / Restaurant Account Name
+              </label>
+              <input
+                type="text"
+                defaultValue="Qureshi Mandi Coimbatore"
+                className="w-full bg-slate-950 border border-slate-800 text-white rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                Bank Account Number
+              </label>
+              <input
+                type="text"
+                defaultValue="923010045892147"
+                placeholder="e.g. 918020034921"
+                className="w-full bg-slate-950 border border-slate-800 text-white font-mono text-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold uppercase text-slate-400 mb-1">
+                Bank IFSC Code
+              </label>
+              <input
+                type="text"
+                defaultValue="UTIB0001892"
+                placeholder="e.g. HDFC0001234"
+                className="w-full bg-slate-950 border border-slate-800 text-white font-mono text-slate-300 rounded-xl px-4 py-2.5 focus:outline-none focus:border-amber-500 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
         {/* Submit */}
         <div className="flex justify-end">
           <button
