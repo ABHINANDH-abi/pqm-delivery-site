@@ -321,6 +321,38 @@ export class OrdersService {
       cancellationReason: reason || 'Cancelled by customer',
     });
   }
+
+  /**
+   * Rate and submit customer feedback for order delivery
+   */
+  async rateOrder(orderId: string, customerId: string, rating: number, feedback?: string) {
+    const order = await prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) {
+      throw new NotFoundError('Order not found');
+    }
+
+    if (order.customerId !== customerId) {
+      throw new ForbiddenError('Access denied to rate this order');
+    }
+
+    return prisma.order.update({
+      where: { id: orderId },
+      data: {
+        rating: Math.min(5, Math.max(1, rating)),
+        feedback: feedback || null,
+      },
+      include: {
+        items: true,
+        payment: true,
+        customer: true,
+        deliveryPartner: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    });
+  }
 }
 
 export const ordersService = new OrdersService();

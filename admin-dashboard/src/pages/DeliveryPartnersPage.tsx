@@ -37,6 +37,8 @@ interface Order {
     phone?: string;
   };
   deliveryPartnerId?: string;
+  rating?: number;
+  feedback?: string;
   items: OrderItem[];
 }
 
@@ -258,6 +260,25 @@ export const DeliveryPartnersPage: React.FC = () => {
                   {/* Driver Money & Performance Snapshot */}
                   <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
                     <div className="text-right">
+                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
+                        Driver Rating
+                      </span>
+                      <span className="text-xl font-black text-amber-400 flex items-center justify-end gap-1">
+                        ⭐{' '}
+                        {driver.deliveredOrders.filter((o) => o.rating).length > 0
+                          ? (
+                              driver.deliveredOrders
+                                .filter((o) => o.rating)
+                                .reduce((sum, o) => sum + (o.rating || 0), 0) /
+                              driver.deliveredOrders.filter((o) => o.rating).length
+                            ).toFixed(1)
+                          : '5.0'}
+                      </span>
+                    </div>
+
+                    <div className="h-10 w-px bg-slate-800" />
+
+                    <div className="text-right">
                       <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
                         Money Earned
                       </span>
@@ -318,6 +339,18 @@ export const DeliveryPartnersPage: React.FC = () => {
                               <p className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
                                 <MapPin className="w-3 h-3 text-slate-500 shrink-0" /> {order.deliveryAddressText}
                               </p>
+                              {order.rating ? (
+                                <div className="mt-2 bg-slate-950 p-2 rounded-lg border border-slate-800 text-xs">
+                                  <span className="font-bold text-amber-400">
+                                    {'⭐'.repeat(order.rating)} ({order.rating}/5 Stars)
+                                  </span>
+                                  {order.feedback ? (
+                                    <p className="text-slate-400 italic text-[11px] mt-0.5">
+                                      "{order.feedback}"
+                                    </p>
+                                  ) : null}
+                                </div>
+                              ) : null}
                             </div>
 
                             <div className="flex items-center gap-4 border-t md:border-t-0 border-slate-800 pt-3 md:pt-0">

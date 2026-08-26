@@ -25,4 +25,7 @@ router.patch(
 // Customer order cancellation
 router.post('/:id/cancel', ordersController.cancel);
 
+// Customer order rating & feedback
+router.post('/:id/rating', ordersController.rate);
+
 export default router;

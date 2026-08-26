@@ -28,6 +28,8 @@ export interface Order {
   totalAmount: string | number;
   deliveryAddressText: string;
   notes?: string;
+  rating?: number;
+  feedback?: string;
   customerId: string;
   customer: {
     name: string;

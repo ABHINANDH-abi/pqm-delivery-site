@@ -62,6 +62,19 @@ export class OrdersController {
       next(error);
     }
   }
+
+  async rate(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const customerId = req.user!.userId;
+      const { rating, feedback } = req.body;
+
+      const order = await ordersService.rateOrder(id!, customerId, rating, feedback);
+      return sendSuccess(res, order, 'Rating and feedback submitted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const ordersController = new OrdersController();

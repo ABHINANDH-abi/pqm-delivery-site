@@ -65,6 +65,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ─── Health check ─────────────────────────────────────────────────────────────
 
+app.get('/', (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: '🔥 Qureshi Mandi Coimbatore Backend API v1.0.0 is Running!',
+  });
+});
+
 app.get('/health', (_req, res) => {
   res.status(200).json({
     success: true,
@@ -79,6 +86,19 @@ app.get('/health', (_req, res) => {
 // ─── API routes ───────────────────────────────────────────────────────────────
 
 const API_PREFIX = '/api/v1';
+
+app.get(API_PREFIX, (_req, res) => {
+  res.status(200).json({
+    success: true,
+    message: '🚀 Qureshi Mandi API v1 Endpoints Active',
+    endpoints: [
+      '/api/v1/auth/login',
+      '/api/v1/products',
+      '/api/v1/categories',
+      '/api/v1/orders',
+    ],
+  });
+});
 
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/users`, userRoutes);
@@ -110,9 +130,9 @@ app.use(errorHandler);
 
 // ─── Start server ─────────────────────────────────────────────────────────────
 
-const server = app.listen(env.port, () => {
+const server = app.listen(env.port, '0.0.0.0', () => {
   console.log(`\n🚀 Server running in ${env.nodeEnv} mode`);
-  console.log(`📡 Listening on http://localhost:${env.port}`);
+  console.log(`📡 Listening on http://0.0.0.0:${env.port} (all network interfaces)`);
   console.log(`🔍 Health check: http://localhost:${env.port}/health`);
   console.log(`📦 API base: http://localhost:${env.port}/api/v1\n`);
 });

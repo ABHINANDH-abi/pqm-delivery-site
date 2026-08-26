@@ -164,6 +164,10 @@ model Order {
 
   notes String?
 
+  // Driver Rating & Customer Feedback
+  rating   Int?     // 1 to 5 stars
+  feedback String?  // Review comment text
+
   // Customer
   customerId String
   customer   User   @relation("CustomerOrders", fields: [customerId], references: [id], onDelete: Restrict)

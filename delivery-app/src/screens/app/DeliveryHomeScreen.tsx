@@ -310,12 +310,22 @@ export default function DeliveryHomeScreen() {
               <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
                   <Text style={styles.statNumber}>{completedOrders.length}</Text>
-                  <Text style={styles.statTitle}>Completed Trips</Text>
+                  <Text style={styles.statTitle}>Trips Done</Text>
                 </View>
 
                 <View style={styles.statBox}>
-                  <Text style={styles.statNumber}>~{totalKmTraveled} km</Text>
-                  <Text style={styles.statTitle}>Distance Traveled</Text>
+                  <Text style={styles.statNumber}>
+                    ⭐{' '}
+                    {completedOrders.filter((o) => o.rating).length > 0
+                      ? (
+                          completedOrders
+                            .filter((o) => o.rating)
+                            .reduce((sum, o) => sum + (o.rating || 0), 0) /
+                          completedOrders.filter((o) => o.rating).length
+                        ).toFixed(1)
+                      : '5.0'}
+                  </Text>
+                  <Text style={styles.statTitle}>Avg Rating</Text>
                 </View>
 
                 <View style={styles.statBox}>
@@ -328,7 +338,7 @@ export default function DeliveryHomeScreen() {
             </View>
 
             {/* Completed Orders History Section */}
-            <Text style={styles.historyTitle}>Delivery History ({completedOrders.length})</Text>
+            <Text style={styles.historyTitle}>Delivery History & Customer Ratings ({completedOrders.length})</Text>
 
             {completedOrders.length === 0 ? (
               <View style={styles.emptyContainer}>
@@ -361,6 +371,29 @@ export default function DeliveryHomeScreen() {
                   <Text style={styles.historyItems}>
                     📦 {order.items.map((i) => `${i.quantity}x ${i.productName}`).join(', ')}
                   </Text>
+
+                  {/* Customer Rating & Feedback Comment */}
+                  {order.rating ? (
+                    <View
+                      style={{
+                        marginTop: 10,
+                        backgroundColor: '#0F172A',
+                        padding: 10,
+                        borderRadius: 10,
+                        borderWidth: 1,
+                        borderColor: '#334155',
+                      }}
+                    >
+                      <Text style={{ color: '#F59E0B', fontSize: 12, fontWeight: '800' }}>
+                        {'⭐'.repeat(order.rating)} Customer Rating: {order.rating}/5
+                      </Text>
+                      {order.feedback ? (
+                        <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 2, fontStyle: 'italic' }}>
+                          "{order.feedback}"
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : null}
                 </View>
               ))
             )}

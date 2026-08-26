@@ -7,6 +7,9 @@ import {
   SafeAreaView,
   ScrollView,
   ActivityIndicator,
+  Modal,
+  TextInput,
+  Alert,
 } from 'react-native';
 import { ordersApi, Order, OrderStatus } from '../../api/orders.api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -17,6 +20,12 @@ type Props = NativeStackScreenProps<AppStackParamList, 'OrderHistory'>;
 export default function OrderHistoryScreen({ navigation }: Props) {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+
+  // Rating Modal state
+  const [ratingModalOrder, setRatingModalOrder] = useState<Order | null>(null);
+  const [selectedStars, setSelectedStars] = useState<number>(5);
+  const [feedbackText, setFeedbackText] = useState<string>('');
+  const [submittingRating, setSubmittingRating] = useState<boolean>(false);
 
   const fetchOrders = async () => {
     try {
@@ -33,6 +42,27 @@ export default function OrderHistoryScreen({ navigation }: Props) {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  const openRatingModal = (order: Order) => {
+    setRatingModalOrder(order);
+    setSelectedStars(order.rating || 5);
+    setFeedbackText(order.feedback || '');
+  };
+
+  const handleRatingSubmit = async () => {
+    if (!ratingModalOrder) return;
+    try {
+      setSubmittingRating(true);
+      const updated = await ordersApi.rateOrder(ratingModalOrder.id, selectedStars, feedbackText);
+      setOrders((prev) => prev.map((o) => (o.id === ratingModalOrder.id ? updated : o)));
+      Alert.alert('Thank You! ⭐', 'Your delivery rating and feedback have been submitted.');
+      setRatingModalOrder(null);
+    } catch (err) {
+      Alert.alert('Error', 'Failed to submit rating. Please try again.');
+    } finally {
+      setSubmittingRating(false);
+    }
+  };
 
   const getStatusBadge = (status: OrderStatus) => {
     switch (status) {
@@ -61,7 +91,7 @@ export default function OrderHistoryScreen({ navigation }: Props) {
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>← Back</Text>
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order History 📜</Text>
+        <Text style={styles.headerTitle}>My Orders 📜</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -78,41 +108,132 @@ export default function OrderHistoryScreen({ navigation }: Props) {
             </View>
           ) : (
             orders.map((order) => (
-              <TouchableOpacity
-                key={order.id}
-                style={styles.orderCard}
-                activeOpacity={0.8}
-                onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
-              >
-                <View style={styles.cardHeader}>
-                  <View>
-                    <Text style={styles.orderId}>Order #{order.id.slice(-6).toUpperCase()}</Text>
-                    <Text style={styles.orderDate}>
-                      {new Date(order.createdAt).toLocaleDateString()} at{' '}
-                      {new Date(order.createdAt).toLocaleTimeString([], {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
-                    </Text>
+              <View key={order.id} style={styles.orderCard}>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
+                >
+                  <View style={styles.cardHeader}>
+                    <View>
+                      <Text style={styles.orderId}>Order #{order.id.slice(-6).toUpperCase()}</Text>
+                      <Text style={styles.orderDate}>
+                        {new Date(order.createdAt).toLocaleDateString()} at{' '}
+                        {new Date(order.createdAt).toLocaleTimeString([], {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </Text>
+                    </View>
+
+                    {getStatusBadge(order.status)}
                   </View>
 
-                  {getStatusBadge(order.status)}
-                </View>
+                  <View style={styles.divider} />
 
-                <View style={styles.divider} />
+                  <Text style={styles.itemsSummary}>
+                    {order.items.map((i) => `${i.productName} (x${i.quantity})`).join(', ')}
+                  </Text>
+                </TouchableOpacity>
 
-                <Text style={styles.itemsSummary}>
-                  {order.items.map((i) => `${i.productName} (x${i.quantity})`).join(', ')}
-                </Text>
+                {/* Delivered Rating Section */}
+                {order.status === 'DELIVERED' && (
+                  <View style={styles.ratingSectionContainer}>
+                    {order.rating ? (
+                      <View style={styles.ratedBadgeBox}>
+                        <Text style={styles.ratedStarsText}>
+                          {'⭐'.repeat(order.rating)} ({order.rating}/5)
+                        </Text>
+                        {order.feedback ? (
+                          <Text style={styles.ratedCommentText}>"{order.feedback}"</Text>
+                        ) : null}
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.rateButton}
+                        activeOpacity={0.8}
+                        onPress={() => openRatingModal(order)}
+                      >
+                        <Text style={styles.rateButtonText}>⭐ Rate Delivery Boy</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
 
                 <View style={styles.cardFooter}>
                   <Text style={styles.totalAmount}>₹{order.totalAmount}</Text>
-                  <Text style={styles.trackText}>Track Order →</Text>
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('OrderTracking', { orderId: order.id })}
+                  >
+                    <Text style={styles.trackText}>Track Order →</Text>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
+              </View>
             ))
           )}
         </ScrollView>
+      )}
+
+      {/* 5-Star Rating & Feedback Modal */}
+      {ratingModalOrder && (
+        <Modal visible transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>Rate Your Delivery Boy ⭐</Text>
+              <Text style={styles.modalSubtitle}>
+                How was your experience for Order #{ratingModalOrder.id.slice(-6).toUpperCase()}?
+              </Text>
+
+              {/* Star Picker */}
+              <View style={styles.starsRow}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <TouchableOpacity
+                    key={star}
+                    onPress={() => setSelectedStars(star)}
+                    style={styles.starTouchable}
+                  >
+                    <Text style={[styles.starChar, star <= selectedStars && styles.starCharSelected]}>
+                      ★
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+              <Text style={styles.ratingLabelText}>{selectedStars} of 5 Stars</Text>
+
+              {/* Feedback Comment Box */}
+              <TextInput
+                style={styles.feedbackInput}
+                placeholder="Write feedback for delivery boy (optional)..."
+                placeholderTextColor="#64748B"
+                multiline
+                numberOfLines={3}
+                value={feedbackText}
+                onChangeText={setFeedbackText}
+              />
+
+              {/* Action Buttons */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={styles.cancelModalBtn}
+                  onPress={() => setRatingModalOrder(null)}
+                >
+                  <Text style={styles.cancelModalText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.submitModalBtn}
+                  onPress={handleRatingSubmit}
+                  disabled={submittingRating}
+                >
+                  {submittingRating ? (
+                    <ActivityIndicator color="#0F172A" />
+                  ) : (
+                    <Text style={styles.submitModalText}>Submit Rating</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       )}
     </SafeAreaView>
   );
@@ -216,6 +337,40 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
+  ratingSectionContainer: {
+    marginTop: 12,
+  },
+  rateButton: {
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  rateButtonText: {
+    color: '#F59E0B',
+    fontWeight: '800',
+    fontSize: 12,
+  },
+  ratedBadgeBox: {
+    backgroundColor: '#0F172A',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  ratedStarsText: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  ratedCommentText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    marginTop: 2,
+    fontStyle: 'italic',
+  },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -234,5 +389,99 @@ const styles = StyleSheet.create({
     color: '#F59E0B',
     fontSize: 13,
     fontWeight: '800',
+  },
+
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    color: '#94A3B8',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  starTouchable: {
+    padding: 4,
+  },
+  starChar: {
+    fontSize: 34,
+    color: '#475569',
+  },
+  starCharSelected: {
+    color: '#F59E0B',
+  },
+  ratingLabelText: {
+    color: '#F59E0B',
+    fontSize: 13,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 14,
+  },
+  feedbackInput: {
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#334155',
+    color: '#FFFFFF',
+    padding: 12,
+    fontSize: 13,
+    textAlignVertical: 'top',
+    height: 80,
+    marginBottom: 16,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  cancelModalBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#334155',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelModalText: {
+    color: '#94A3B8',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  submitModalBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    backgroundColor: '#F59E0B',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submitModalText: {
+    color: '#0F172A',
+    fontWeight: '800',
+    fontSize: 13,
   },
 });

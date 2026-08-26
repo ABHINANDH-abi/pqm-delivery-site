@@ -33,6 +33,8 @@ export interface Order {
   totalAmount: string | number;
   deliveryAddressText: string;
   notes?: string;
+  rating?: number;
+  feedback?: string;
   customerId: string;
   items: OrderItem[];
   payment?: {
@@ -76,6 +78,11 @@ export const ordersApi = {
 
   cancel: async (id: string, reason?: string): Promise<Order> => {
     const res = await apiClient.post(`/orders/${id}/cancel`, { reason });
+    return res.data.data;
+  },
+
+  rateOrder: async (id: string, rating: number, feedback?: string): Promise<Order> => {
+    const res = await apiClient.post(`/orders/${id}/rating`, { rating, feedback });
     return res.data.data;
   },
 };

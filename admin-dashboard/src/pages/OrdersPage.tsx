@@ -255,8 +255,8 @@ export const OrdersPage: React.FC = () => {
                   <th className="px-6 py-4">Customer</th>
                   <th className="px-6 py-4">Assigned Rider</th>
                   <th className="px-6 py-4">Items Summary</th>
-                  <th className="px-6 py-4">Total Price</th>
-                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Total & Payment</th>
+                  <th className="px-6 py-4">Status & Rating</th>
                   <th className="px-6 py-4 text-right">Dispatch Action</th>
                 </tr>
               </thead>
@@ -264,6 +264,9 @@ export const OrdersPage: React.FC = () => {
                 {orders.map((order) => {
                   const driverName = order.deliveryPartner?.user?.name || null;
                   const driverPhone = order.deliveryPartner?.user?.phone || null;
+
+                  const payMethod = order.payment?.method === 'RAZORPAY' ? '⚡ UPI / GPay' : '💵 Cash on Delivery';
+                  const payStatus = order.payment?.status || (order.status === 'DELIVERED' ? 'PAID' : 'PENDING');
 
                   return (
                     <tr key={order.id} className="hover:bg-slate-800/40 transition">
@@ -316,10 +319,42 @@ export const OrdersPage: React.FC = () => {
                           </p>
                         </div>
                       </td>
-                      <td className="px-6 py-4 font-mono font-bold text-amber-400 text-base">
-                        ₹{order.totalAmount}
+                      <td className="px-6 py-4">
+                        <div>
+                          <span className="font-mono font-bold text-amber-400 text-base block">
+                            ₹{order.totalAmount}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400 block mt-0.5">
+                            {payMethod}
+                          </span>
+                          <span
+                            className={`inline-block px-2 py-0.5 rounded text-[10px] font-extrabold mt-1 ${
+                              payStatus === 'PAID'
+                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                            }`}
+                          >
+                            {payStatus === 'PAID' ? '✅ PAYMENT SUCCESS' : '⏳ COD PENDING'}
+                          </span>
+                        </div>
                       </td>
-                      <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
+                      <td className="px-6 py-4">
+                        <div className="space-y-1.5">
+                          {getStatusBadge(order.status)}
+                          {order.rating ? (
+                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 max-w-[170px]">
+                              <span className="text-xs font-bold text-amber-400 block">
+                                {'⭐'.repeat(order.rating)} ({order.rating}/5)
+                              </span>
+                              {order.feedback ? (
+                                <p className="text-[11px] text-slate-400 italic truncate mt-0.5">
+                                  "{order.feedback}"
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           {getNextActionButtons(order)}
