@@ -34,6 +34,16 @@ export interface Order {
     email: string;
     phone?: string;
   };
+  deliveryPartnerId?: string;
+  deliveryPartner?: {
+    id: string;
+    vehicleType?: string;
+    user?: {
+      name: string;
+      email: string;
+      phone?: string;
+    };
+  };
   items: OrderItem[];
   payment?: {
     method: string;

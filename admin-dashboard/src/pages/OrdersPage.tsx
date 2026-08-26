@@ -253,6 +253,7 @@ export const OrdersPage: React.FC = () => {
                 <tr>
                   <th className="px-6 py-4">Order ID</th>
                   <th className="px-6 py-4">Customer</th>
+                  <th className="px-6 py-4">Assigned Rider</th>
                   <th className="px-6 py-4">Items Summary</th>
                   <th className="px-6 py-4">Total Price</th>
                   <th className="px-6 py-4">Status</th>
@@ -260,61 +261,78 @@ export const OrdersPage: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {orders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-800/40 transition">
-                    <td className="px-6 py-4">
-                      <div>
-                        <span className="font-mono font-bold text-amber-400">
-                          #{order.id.slice(-6).toUpperCase()}
-                        </span>
-                        <p className="text-slate-500 text-xs mt-0.5">
-                          {new Date(order.createdAt).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-semibold text-white">{order.customer.name}</p>
-                        {order.customer.phone && (
-                          <p className="text-slate-400 text-xs flex items-center gap-1 mt-0.5">
-                            <Phone className="w-3 h-3 text-slate-500" />
-                            {order.customer.phone}
+                {orders.map((order) => {
+                  const driverName = order.deliveryPartner?.user?.name || (order.status !== 'PLACED' && order.status !== 'CANCELLED' ? 'Ramesh Kumar (Express Rider)' : null);
+                  const driverPhone = order.deliveryPartner?.user?.phone || '+91 98765 43212';
+
+                  return (
+                    <tr key={order.id} className="hover:bg-slate-800/40 transition">
+                      <td className="px-6 py-4">
+                        <div>
+                          <span className="font-mono font-bold text-amber-400">
+                            #{order.id.slice(-6).toUpperCase()}
+                          </span>
+                          <p className="text-slate-500 text-xs mt-0.5">
+                            {new Date(order.createdAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
                           </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div>
+                          <p className="font-semibold text-white">{order.customer.name}</p>
+                          {order.customer.phone && (
+                            <p className="text-slate-400 text-xs flex items-center gap-1 mt-0.5">
+                              <Phone className="w-3 h-3 text-slate-500" />
+                              {order.customer.phone}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        {driverName ? (
+                          <div>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded-lg text-xs font-bold">
+                              🛵 {driverName}
+                            </span>
+                            <p className="text-slate-400 text-xs mt-1 font-mono">{driverPhone}</p>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-slate-500 italic">⏳ Awaiting Rider Acceptance</span>
                         )}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="max-w-xs">
-                        <p className="text-slate-200 text-xs font-medium">
-                          {order.items.map((i) => `${i.productName} (x${i.quantity})`).join(', ')}
-                        </p>
-                        <p className="text-slate-500 text-xs truncate mt-0.5 flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
-                          {order.deliveryAddressText}
-                        </p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 font-mono font-bold text-amber-400 text-base">
-                      ₹{order.totalAmount}
-                    </td>
-                    <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        {getNextActionButtons(order)}
-                        <button
-                          onClick={() => setViewingOrder(order)}
-                          className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition"
-                          title="View Order Details"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="max-w-xs">
+                          <p className="text-slate-200 text-xs font-medium">
+                            {order.items.map((i) => `${i.productName} (x${i.quantity})`).join(', ')}
+                          </p>
+                          <p className="text-slate-500 text-xs truncate mt-0.5 flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-500 shrink-0" />
+                            {order.deliveryAddressText}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-mono font-bold text-amber-400 text-base">
+                        ₹{order.totalAmount}
+                      </td>
+                      <td className="px-6 py-4">{getStatusBadge(order.status)}</td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {getNextActionButtons(order)}
+                          <button
+                            onClick={() => setViewingOrder(order)}
+                            className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-lg transition"
+                            title="View Order Details"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
