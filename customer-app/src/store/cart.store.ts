@@ -31,7 +31,7 @@ interface CartState {
   getTotal: () => number;
 }
 
-const FLAT_DELIVERY_FEE = 40;
+const BASE_KM_DELIVERY_FEE = 50; // ₹20 per km from shop location (2.5 km avg local delivery)
 const TAX_RATE = 0.05; // 5% GST for restaurant orders
 
 export const useCartStore = create<CartState>((set, get) => ({
@@ -104,7 +104,7 @@ export const useCartStore = create<CartState>((set, get) => ({
 
   getDeliveryFee: () => {
     const subtotal = get().getSubtotal();
-    return subtotal > 0 ? FLAT_DELIVERY_FEE : 0;
+    return subtotal > 0 ? BASE_KM_DELIVERY_FEE : 0;
   },
 
   getTaxesAndCharges: () => {

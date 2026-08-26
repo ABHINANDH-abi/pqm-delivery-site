@@ -4,8 +4,33 @@ import { CreateOrderInput, UpdateOrderStatusInput } from './orders.validation';
 import { OrderStatus, UserRole } from '@prisma/client';
 import { notificationsService } from '../notifications/notifications.service';
 
-const FLAT_DELIVERY_FEE = 40;
+const RATE_PER_KM = 20; // ₹20 per km from shop location
 const TAX_RATE = 0.05; // 5% GST
+
+function calculateKmDeliveryFee(lat?: number | null, lng?: number | null): number {
+  const SHOP_LAT = 11.0168; // Qureshi Mandi Coimbatore
+  const SHOP_LNG = 76.9558;
+
+  if (!lat || !lng) {
+    // Default local 2.5 km distance in Coimbatore = ₹50
+    return 50;
+  }
+
+  const R = 6371; // Earth radius in km
+  const dLat = ((lat - SHOP_LAT) * Math.PI) / 180;
+  const dLon = ((lng - SHOP_LNG) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((SHOP_LAT * Math.PI) / 180) *
+      Math.cos((lat * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const distanceKm = R * c;
+
+  // Minimum ₹20 fee (1 km), ₹20 per km rounded up
+  return Math.max(20, Math.ceil(distanceKm * RATE_PER_KM));
+}
 
 // Valid state transitions
 const VALID_TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
@@ -69,7 +94,7 @@ export class OrdersService {
       };
     });
 
-    const deliveryFee = FLAT_DELIVERY_FEE;
+    const deliveryFee = calculateKmDeliveryFee(address.latitude, address.longitude);
     const discountAmount = 0;
     const taxAmount = Math.round(subtotal * TAX_RATE);
     const totalAmount = subtotal + deliveryFee + taxAmount - discountAmount;
