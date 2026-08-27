@@ -38,19 +38,60 @@ export default function AddressScreen({ navigation }: Props) {
 
   const handleDetectLocation = () => {
     setDetectingLocation(true);
-    setTimeout(() => {
-      setFormData((prev) => ({
-        ...prev,
-        addressLine1: '104, Avinashi Road, Opposite VOC Park',
-        addressLine2: 'Gandhipuram',
-        city: 'Coimbatore',
-        state: 'Tamil Nadu',
-        pincode: '641018',
-        landmark: 'Near VOC Park',
-      }));
+
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords;
+            const res = await fetch(
+              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+            );
+            const data = await res.json();
+
+            if (data && data.address) {
+              const addr = data.address;
+              const road = addr.road || addr.pedestrian || addr.street || '';
+              const suburb = addr.suburb || addr.neighbourhood || addr.residential || addr.subdistrict || '';
+              const line1 = [road, suburb].filter(Boolean).join(', ') || data.display_name.split(',')[0] || 'Current Location';
+              const line2 = addr.city_district || addr.county || addr.state_district || '';
+              const city = addr.city || addr.town || addr.village || addr.municipality || 'Your City';
+              const state = addr.state || 'Tamil Nadu';
+              const pincode = (addr.postcode || '641001').replace(/\s+/g, '').slice(0, 6);
+
+              setFormData((prev) => ({
+                ...prev,
+                addressLine1: line1,
+                addressLine2: line2,
+                city,
+                state,
+                pincode,
+                landmark: suburb || road || '',
+              }));
+
+              Alert.alert('GPS Location Detected 📍', `Detected Location:\n${line1}, ${city} - ${pincode}`);
+            } else {
+              Alert.alert('GPS Location', 'Latitude: ' + latitude + ', Longitude: ' + longitude);
+            }
+          } catch (err) {
+            Alert.alert('Location Error', 'Failed to resolve street address from GPS.');
+          } finally {
+            setDetectingLocation(false);
+          }
+        },
+        (error) => {
+          setDetectingLocation(false);
+          Alert.alert(
+            'GPS Access Needed',
+            'Please turn on GPS / Location permission on your device to auto-fill your exact address.'
+          );
+        },
+        { enableHighAccuracy: true, timeout: 15000 }
+      );
+    } else {
       setDetectingLocation(false);
-      Alert.alert('GPS Location Detected 📍', 'Delivery address auto-filled for Coimbatore!');
-    }, 800);
+      Alert.alert('GPS Not Available', 'Geolocation API is not available on this device.');
+    }
   };
 
   const fetchAddresses = async () => {
