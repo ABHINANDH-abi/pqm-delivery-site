@@ -342,12 +342,12 @@ export const OrdersPage: React.FC = () => {
                         <div className="space-y-1.5">
                           {getStatusBadge(order.status)}
                           {order.rating ? (
-                            <div className="bg-slate-950 p-2 rounded-lg border border-slate-800 max-w-[170px]">
+                            <div className="bg-slate-950 p-2.5 rounded-xl border border-amber-500/30 max-w-[220px]">
                               <span className="text-xs font-bold text-amber-400 block">
-                                {'⭐'.repeat(order.rating)} ({order.rating}/5)
+                                {'⭐'.repeat(order.rating)} ({order.rating}/5 Stars)
                               </span>
                               {order.feedback ? (
-                                <p className="text-[11px] text-slate-400 italic truncate mt-0.5">
+                                <p className="text-xs text-slate-200 italic mt-1 bg-slate-900 p-1.5 rounded border border-slate-800">
                                   "{order.feedback}"
                                 </p>
                               ) : null}
@@ -470,6 +470,25 @@ export const OrdersPage: React.FC = () => {
                 <span className="text-amber-400 font-mono">₹{viewingOrder.totalAmount}</span>
               </div>
             </div>
+
+            {/* Customer Rating & Review Box */}
+            {viewingOrder.rating ? (
+              <div className="bg-amber-500/10 border border-amber-500/30 p-4 rounded-xl space-y-1">
+                <span className="text-xs font-black text-amber-400 uppercase tracking-wider block">
+                  ⭐ Customer Rating & Feedback Review
+                </span>
+                <div className="text-sm font-bold text-amber-300">
+                  {'⭐'.repeat(viewingOrder.rating)} ({viewingOrder.rating}/5 Stars)
+                </div>
+                {viewingOrder.feedback ? (
+                  <p className="text-xs text-slate-200 italic mt-1 bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                    "{viewingOrder.feedback}"
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-400 italic">No written feedback comment provided</p>
+                )}
+              </div>
+            ) : null}
 
             <div className="flex items-center justify-end gap-3 pt-2">
               <button
