@@ -215,6 +215,43 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
             </View>
           )}
 
+          {/* Assigned Delivery Partner Card */}
+          {order.deliveryPartner && (
+            <View style={{
+              backgroundColor: '#1E293B',
+              borderColor: '#38BDF8',
+              borderWidth: 1,
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: '#38BDF8', justifyContent: 'center', alignItems: 'center' }}>
+                  <Text style={{ fontSize: 22 }}>🛵</Text>
+                </View>
+                <View>
+                  <Text style={{ color: '#38BDF8', fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>ASSIGNED DELIVERY RIDER</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>{order.deliveryPartner.user?.name || 'Ramesh Kumar'}</Text>
+                  <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 2 }}>
+                    {order.deliveryPartner.vehicleType || 'Motorcycle'} • {order.deliveryPartner.vehicleNumber || 'TN 37 AB 1234'} • ⭐ 4.9
+                  </Text>
+                </View>
+              </View>
+
+              {order.deliveryPartner.user?.phone && (
+                <TouchableOpacity
+                  onPress={() => Linking.openURL(`tel:${order.deliveryPartner?.user?.phone}`)}
+                  style={{ backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
+                >
+                  <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 12 }}>📞 Call</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+
           {/* Edit Order Option Banner before OUT_FOR_DELIVERY */}
           {isEditable && (
             <TouchableOpacity style={styles.editBannerCard} onPress={openEditModal} activeOpacity={0.8}>
