@@ -36,6 +36,7 @@ export default function CartScreen({ navigation }: Props) {
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'UPI_GPAY' | 'RAZORPAY'>('UPI_GPAY');
   const [submitting, setSubmitting] = useState<boolean>(false);
+  const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
 
   const fetchAddresses = async () => {
     try {
@@ -297,18 +298,31 @@ export default function CartScreen({ navigation }: Props) {
 
           {/* Bill Summary */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Bill Breakdown</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <Text style={styles.sectionTitle}>Bill Breakdown</Text>
+              <TouchableOpacity
+                onPress={() => setIsReceiptModalOpen(true)}
+                style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}
+              >
+                <Text style={{ color: '#F59E0B', fontSize: 11, fontWeight: '800' }}>📄 Detailed Receipt</Text>
+              </TouchableOpacity>
+            </View>
+
             <View style={styles.billCard}>
               <View style={styles.billRow}>
                 <Text style={styles.billLabel}>Item Subtotal</Text>
                 <Text style={styles.billValue}>₹{subtotal}</Text>
               </View>
               <View style={styles.billRow}>
-                <Text style={styles.billLabel}>Delivery Fee</Text>
+                <Text style={styles.billLabel}>Distance Delivery Fee (@ ₹20/km)</Text>
                 <Text style={styles.billValue}>₹{deliveryFee}</Text>
               </View>
               <View style={styles.billRow}>
-                <Text style={styles.billLabel}>GST & Restaurant Charges (5%)</Text>
+                <Text style={styles.billLabel}>Restaurant Packaging & Safety Fee</Text>
+                <Text style={styles.billValue}>₹15</Text>
+              </View>
+              <View style={styles.billRow}>
+                <Text style={styles.billLabel}>GST & Govt Taxes (5%)</Text>
                 <Text style={styles.billValue}>₹{taxes}</Text>
               </View>
 
@@ -316,9 +330,9 @@ export default function CartScreen({ navigation }: Props) {
 
               <View style={styles.billRowTotal}>
                 <Text style={styles.totalLabel}>
-                  To Pay ({paymentMethod === 'CASH_ON_DELIVERY' ? 'COD' : 'Online'})
+                  To Pay ({paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on Delivery' : 'Online UPI'})
                 </Text>
-                <Text style={styles.totalValue}>₹{total}</Text>
+                <Text style={styles.totalValue}>₹{total + 15}</Text>
               </View>
             </View>
           </View>
@@ -349,6 +363,56 @@ export default function CartScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       )}
+
+      {/* Zomato-Style Detailed Taxes & Charges Receipt Modal */}
+      <Modal visible={isReceiptModalOpen} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#1E293B', borderRadius: 20, padding: 24, width: '100%', maxWidth: 400, borderWidth: 1, borderColor: '#334155' }}>
+            <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>
+              📄 Itemized Tax & Charge Receipt
+            </Text>
+            <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', marginBottom: 20 }}>
+              Official Bill Breakdown for Qureshi Mandi Kitchen
+            </Text>
+
+            <View style={{ backgroundColor: '#0F172A', borderRadius: 14, padding: 16, spaceBetween: 12, borderWidth: 1, borderColor: '#334155' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>Food Subtotal ({items.length} items)</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{subtotal}</Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>Distance Delivery (@ ₹20/km)</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{deliveryFee}</Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>Restaurant Packaging & Hygiene</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹15</Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
+                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>GST & Govt Food Taxes (5%)</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{taxes}</Text>
+              </View>
+
+              <View style={{ height: 1, backgroundColor: '#334155', marginVertical: 8 }} />
+
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Text style={{ color: '#F59E0B', fontWeight: '800', fontSize: 14 }}>Total Order Amount</Text>
+                <Text style={{ color: '#F59E0B', fontWeight: '900', fontSize: 18 }}>₹{total + 15}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              onPress={() => setIsReceiptModalOpen(false)}
+              style={{ backgroundColor: '#F59E0B', marginTop: 20, paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+            >
+              <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 14 }}>Close Receipt</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

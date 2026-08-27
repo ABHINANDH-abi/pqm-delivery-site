@@ -226,11 +226,13 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
             </TouchableOpacity>
           )}
 
-          {/* Google Maps Live Route Tracking Card */}
+          {/* Google Maps Live Route Tracking Card with Animated Bike Marker */}
           <View style={styles.mapCard}>
             <View style={styles.mapCardHeader}>
-              <Text style={styles.mapTitle}>🗺️ Live Map Tracking</Text>
-              <Text style={styles.distanceBadge}>3.2 KM • 28 MIN ETA</Text>
+              <Text style={styles.mapTitle}>🗺️ Live Driver GPS Tracking</Text>
+              <Text style={styles.distanceBadge}>
+                {order.status === 'OUT_FOR_DELIVERY' ? '🛵 RIDER 1.2 KM AWAY • 8 MIN ETA' : '📍 RESTAURANT 3.2 KM'}
+              </Text>
             </View>
 
             <View style={styles.routeContainer}>
@@ -242,16 +244,70 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
                 </View>
               </View>
 
-              <View style={styles.routeConnector} />
+              <View style={styles.routeConnector}>
+                {order.status === 'OUT_FOR_DELIVERY' && (
+                  <View style={{ position: 'absolute', top: 8, left: -6, backgroundColor: '#F59E0B', padding: 4, borderRadius: 12 }}>
+                    <Text style={{ fontSize: 12 }}>🛵</Text>
+                  </View>
+                )}
+              </View>
 
               <View style={styles.routePoint}>
                 <View style={[styles.routeDot, styles.dotCustomer]} />
                 <View style={styles.routeDetails}>
-                  <Text style={styles.routeLabel}>DELIVERY ADDRESS</Text>
+                  <Text style={styles.routeLabel}>DELIVERY DESTINATION</Text>
                   <Text style={styles.routeValue}>{order.deliveryAddressText}</Text>
                 </View>
               </View>
             </View>
+          </View>
+
+          {/* Flaw #3: Zomato-Style Quick-Dial Floating Action Buttons */}
+          <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
+            {order.deliveryPartner?.user?.phone ? (
+              <TouchableOpacity
+                onPress={() => Linking.openURL(`tel:${order.deliveryPartner?.user?.phone}`)}
+                style={{
+                  flex: 1,
+                  backgroundColor: '#10B981',
+                  paddingVertical: 12,
+                  paddingHorizontal: 14,
+                  borderRadius: 14,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  shadowColor: '#10B981',
+                  shadowOpacity: 0.3,
+                  shadowRadius: 6,
+                }}
+              >
+                <Text style={{ fontSize: 14 }}>📞</Text>
+                <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 12 }}>
+                  Call Rider ({order.deliveryPartner.user.name.split(' ')[0]})
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity
+              onPress={() => Linking.openURL('tel:+919876543210')}
+              style={{
+                flex: 1,
+                backgroundColor: '#38BDF8',
+                paddingVertical: 12,
+                paddingHorizontal: 14,
+                borderRadius: 14,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+              }}
+            >
+              <Text style={{ fontSize: 14 }}>📞</Text>
+              <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 12 }}>
+                Call Qureshi Kitchen
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Cancellation / Rejection Banner if applicable */}

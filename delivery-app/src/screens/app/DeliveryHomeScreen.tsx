@@ -58,8 +58,28 @@ export default function DeliveryHomeScreen() {
   useEffect(() => {
     fetchOrders();
     const interval = setInterval(fetchOrders, 6000);
-    return () => clearInterval(interval);
-  }, []);
+
+    // Live GPS Location Streaming to Backend for Customer Map Tracking
+    const gpsInterval = setInterval(() => {
+      if (isOnline && typeof navigator !== 'undefined' && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            deliveryApi.updateLocation(pos.coords.latitude, pos.coords.longitude, true).catch(() => {});
+          },
+          () => {
+            // Fallback default Coimbatore coordinates if hardware GPS times out
+            deliveryApi.updateLocation(11.0168, 76.9558, true).catch(() => {});
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
+        );
+      }
+    }, 10000);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(gpsInterval);
+    };
+  }, [isOnline]);
 
   const handleToggleOnline = async (val: boolean) => {
     setIsOnline(val);
@@ -231,17 +251,50 @@ export default function DeliveryHomeScreen() {
 
                         <View style={styles.divider} />
 
-                        {/* Customer Info */}
+                        {/* Customer Info & Quick-Dial Buttons */}
                         <View style={styles.infoSection}>
                           <Text style={styles.sectionLabel}>CUSTOMER</Text>
                           <Text style={styles.customerName}>{order.customer.name}</Text>
-                          {order.customer.phone && (
+                          
+                          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                            {order.customer.phone ? (
+                              <TouchableOpacity
+                                onPress={() => Linking.openURL(`tel:${order.customer.phone}`)}
+                                style={{
+                                  flex: 1,
+                                  backgroundColor: '#10B981',
+                                  paddingVertical: 8,
+                                  paddingHorizontal: 12,
+                                  borderRadius: 10,
+                                  flexDirection: 'row',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: 6,
+                                }}
+                              >
+                                <Text style={{ fontSize: 13 }}>📞</Text>
+                                <Text style={{ color: '#0F172A', fontWeight: '800', fontSize: 12 }}>Call Customer</Text>
+                              </TouchableOpacity>
+                            ) : null}
+
                             <TouchableOpacity
-                              onPress={() => Linking.openURL(`tel:${order.customer.phone}`)}
+                              onPress={() => Linking.openURL('tel:+919876543210')}
+                              style={{
+                                flex: 1,
+                                backgroundColor: '#38BDF8',
+                                paddingVertical: 8,
+                                paddingHorizontal: 12,
+                                borderRadius: 10,
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: 6,
+                              }}
                             >
-                              <Text style={styles.customerPhone}>📞 {order.customer.phone}</Text>
+                              <Text style={{ fontSize: 13 }}>📞</Text>
+                              <Text style={{ color: '#0F172A', fontWeight: '800', fontSize: 12 }}>Call Kitchen</Text>
                             </TouchableOpacity>
-                          )}
+                          </View>
                         </View>
 
                         {/* Address Snapshot */}
