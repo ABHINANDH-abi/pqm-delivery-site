@@ -1,16 +1,20 @@
-import axios from 'axios';
-import { tokenStorage } from '../utils/secureStorage';
-
-const LOCALHOST_URL = 'http://10.0.2.2:4000/api/v1';
 const PRIMARY_URL = 'https://qureshi-mandi-backend.onrender.com/api/v1';
-const FALLBACK_URL = 'http://192.168.1.4:4000/api/v1';
+const LOCALHOST_URL = 'http://10.0.2.2:4000/api/v1';
+const LOCAL_WIFI_URL = 'http://192.168.1.4:4000/api/v1';
+
+const getInitialBaseUrl = () => {
+  if (typeof window !== 'undefined' && window.location && window.location.hostname !== 'localhost') {
+    return PRIMARY_URL;
+  }
+  return process.env['EXPO_PUBLIC_API_BASE_URL'] || PRIMARY_URL;
+};
 
 export const apiClient = axios.create({
-  baseURL: LOCALHOST_URL,
+  baseURL: getInitialBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 8000,
+  timeout: 15000,
 });
 
 // Automatic auth token header interceptor
@@ -93,18 +97,26 @@ apiClient.interceptors.response.use(
       }
     }
 
-    // Automatic failover retry if primary host is unreachable or DNS fails on Android emulator
-    if ((error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || !error.response) && !originalRequest._networkRetried) {
-      originalRequest._networkRetried = true;
+    // Smart Connection Intelligence: Multi-host auto-failover & Render cold-start retry
+    if (
+      (error.code === 'ERR_NETWORK' || error.code === 'ECONNABORTED' || !error.response) &&
+      (!originalRequest._retryCount || originalRequest._retryCount < 3)
+    ) {
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
       const currentUrl = originalRequest.baseURL || apiClient.defaults.baseURL || '';
 
       if (currentUrl.includes('onrender.com')) {
-        originalRequest.baseURL = FALLBACK_URL;
-      } else if (currentUrl.includes('192.168.1.4')) {
+        apiClient.defaults.baseURL = LOCALHOST_URL;
         originalRequest.baseURL = LOCALHOST_URL;
+      } else if (currentUrl.includes('10.0.2.2')) {
+        apiClient.defaults.baseURL = LOCAL_WIFI_URL;
+        originalRequest.baseURL = LOCAL_WIFI_URL;
       } else {
+        apiClient.defaults.baseURL = PRIMARY_URL;
         originalRequest.baseURL = PRIMARY_URL;
       }
+
+      console.log(`[Connection Intelligence] Switching driver backend host (Attempt #${originalRequest._retryCount}): ${originalRequest.baseURL}`);
       return apiClient(originalRequest);
     }
 
