@@ -91,7 +91,7 @@ export default function HomeScreen({ navigation }: Props) {
     const matchesSearch =
       item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch && item.isAvailable;
+    return matchesCategory && matchesSearch;
   });
 
   const cartCount = getItemCount();
@@ -205,15 +205,21 @@ export default function HomeScreen({ navigation }: Props) {
                     <View style={styles.cardFooter}>
                       <Text style={styles.foodPrice}>₹{prod.price}</Text>
 
-                      <TouchableOpacity
-                        style={[styles.addButton, qty > 0 && styles.addButtonAdded]}
-                        activeOpacity={0.8}
-                        onPress={() => handleAddToCart(prod)}
-                      >
-                        <Text style={[styles.addButtonText, qty > 0 && styles.addButtonTextAdded]}>
-                          {qty > 0 ? `ADDED (${qty}) +` : 'ADD +'}
-                        </Text>
-                      </TouchableOpacity>
+                      {prod.isAvailable ? (
+                        <TouchableOpacity
+                          style={[styles.addButton, qty > 0 && styles.addButtonAdded]}
+                          activeOpacity={0.8}
+                          onPress={() => handleAddToCart(prod)}
+                        >
+                          <Text style={[styles.addButtonText, qty > 0 && styles.addButtonTextAdded]}>
+                            {qty > 0 ? `ADDED (${qty}) +` : 'ADD +'}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <View style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', borderWidth: 1, borderColor: '#EF4444', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                          <Text style={{ color: '#EF4444', fontSize: 10, fontWeight: '900' }}>🔴 OUT OF STOCK</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
                 </View>
