@@ -1,16 +1,16 @@
 import axios from 'axios';
 import { tokenStorage } from '../utils/secureStorage';
 
+const LOCALHOST_URL = 'http://10.0.2.2:4000/api/v1';
 const PRIMARY_URL = 'https://qureshi-mandi-backend.onrender.com/api/v1';
 const FALLBACK_URL = 'http://192.168.1.4:4000/api/v1';
-const LOCALHOST_URL = 'http://10.0.2.2:4000/api/v1';
 
 export const apiClient = axios.create({
-  baseURL: PRIMARY_URL,
+  baseURL: LOCALHOST_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 45000,
+  timeout: 8000,
 });
 
 // Automatic auth token header interceptor

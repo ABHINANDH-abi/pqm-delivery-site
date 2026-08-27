@@ -13,12 +13,14 @@ import {
 } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
 import { deliveryApi, DeliveryOrder, OrderStatus } from '../../api/delivery.api';
+import { pushNotification } from '../../utils/notification';
 
 type MainTab = 'DELIVERIES' | 'EARNINGS' | 'PROFILE';
 type SubTab = 'ASSIGNED' | 'AVAILABLE';
 
 export default function DeliveryHomeScreen() {
-  const { user, logout } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
   const [isOnline, setIsOnline] = useState<boolean>(true);
   const [mainTab, setMainTab] = useState<MainTab>('DELIVERIES');
   const [subTab, setSubTab] = useState<SubTab>('ASSIGNED');
@@ -27,6 +29,7 @@ export default function DeliveryHomeScreen() {
   const [availableOrders, setAvailableOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [actionId, setActionId] = useState<string | null>(null);
+  const [prevAvailableCount, setPrevAvailableCount] = useState<number>(0);
 
   const fetchOrders = async () => {
     try {
@@ -35,6 +38,14 @@ export default function DeliveryHomeScreen() {
         deliveryApi.getAssignedOrders(),
         deliveryApi.getAvailableOrders(),
       ]);
+
+      if (available.length > prevAvailableCount && prevAvailableCount > 0) {
+        const latest = available[0];
+        if (latest) {
+          pushNotification.notifyNewOrderAlert(latest.id, latest.deliveryAddressText, latest.totalAmount);
+        }
+      }
+      setPrevAvailableCount(available.length);
       setAssignedOrders(assigned);
       setAvailableOrders(available);
     } catch (err) {

@@ -25,11 +25,14 @@ const LIFECYCLE_STEPS: { key: OrderStatus; label: string; sub: string }[] = [
   { key: 'DELIVERED', label: 'Delivered', sub: 'Enjoy your meal!' },
 ];
 
+import { pushNotification } from '../../utils/notification';
+
 export default function OrderTrackingScreen({ route, navigation }: Props) {
   const { orderId } = route.params;
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [prevStatus, setPrevStatus] = useState<string | null>(null);
 
   // Edit Order Modal State
   const [editModalVisible, setEditModalVisible] = useState<boolean>(false);
@@ -41,6 +44,11 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
     try {
       setRefreshing(true);
       const data = await ordersApi.getById(orderId);
+      
+      if (prevStatus && prevStatus !== data.status) {
+        pushNotification.notifyOrderStatusChange(data.id, data.status);
+      }
+      setPrevStatus(data.status);
       setOrder(data);
     } catch (err) {
       console.log('Failed to fetch order details:', err);
