@@ -10,13 +10,35 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   Platform,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
+import { apiClient } from '../../api/client';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('delivery@restaurant.com');
-  const [password, setPassword] = useState('Delivery@123456');
+  const [authMode, setAuthMode] = useState<'LOGIN' | 'REGISTER'>('LOGIN');
+
+  // Login State
+  const [email, setEmail] = useState('driver@example.com');
+  const [password, setPassword] = useState('Driver@123456');
   const [loading, setLoading] = useState(false);
+
+  // Register Driver State
+  const [driverName, setDriverName] = useState('');
+  const [driverPhone, setDriverPhone] = useState('');
+  const [driverEmail, setDriverEmail] = useState('');
+  const [driverCity, setDriverCity] = useState('Coimbatore');
+  const [vehicleType, setVehicleType] = useState('Motorcycle / Scooter');
+  const [driverPassword, setDriverPassword] = useState('');
+
+  // OTP State
+  const [isOtpModalOpen, setIsOtpModalOpen] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [sendingOtp, setSendingOtp] = useState(false);
+  const [verifyingOtp, setVerifyingOtp] = useState(false);
+  const [debugOtpHint, setDebugOtpHint] = useState<string | null>(null);
+
   const login = useAuthStore((state) => state.login);
 
   const handleLogin = async () => {
@@ -36,13 +58,73 @@ export default function LoginScreen() {
     }
   };
 
+  const handleSendDriverOtp = async () => {
+    if (!driverName.trim() || !driverPhone.trim() || !driverEmail.trim() || !driverPassword.trim()) {
+      Alert.alert('Missing Fields', 'Please fill in Name, Phone, Gmail, and Password.');
+      return;
+    }
+
+    if (!driverEmail.includes('@')) {
+      Alert.alert('Invalid Gmail', 'Please enter a valid Gmail address.');
+      return;
+    }
+
+    try {
+      setSendingOtp(true);
+      const res = await apiClient.post('/auth/send-otp', {
+        email: driverEmail.trim(),
+        name: driverName.trim(),
+        phone: driverPhone.trim(),
+      });
+      const data = res.data.data;
+      setDebugOtpHint(data.otpDebug || '123456');
+      setIsOtpModalOpen(true);
+      Alert.alert('Gmail OTP Sent ✉️', `Verification code sent to ${driverEmail}.`);
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.error?.message || 'Failed to send OTP.');
+    } finally {
+      setSendingOtp(false);
+    }
+  };
+
+  const handleVerifyDriverOtp = async () => {
+    if (!otpCode.trim() || otpCode.trim().length !== 6) {
+      Alert.alert('Error', 'Please enter the full 6-digit OTP code sent to your Gmail.');
+      return;
+    }
+
+    try {
+      setVerifyingOtp(true);
+      const res = await apiClient.post('/auth/verify-otp-and-register', {
+        name: driverName.trim(),
+        phone: driverPhone.trim(),
+        email: driverEmail.trim(),
+        password: driverPassword,
+        otp: otpCode.trim(),
+        role: 'DELIVERY_PARTNER',
+        addressLine1: driverCity.trim(),
+      });
+
+      const data = res.data.data;
+      Alert.alert('Driver Account Verified 🎉', 'Welcome! Your driver profile has been created.');
+      setIsOtpModalOpen(false);
+
+      // Auto login
+      await login(driverEmail.trim(), driverPassword);
+    } catch (err: any) {
+      Alert.alert('Verification Error', err.response?.data?.error?.message || 'OTP verification failed.');
+    } finally {
+      setVerifyingOtp(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
-        <View style={styles.inner}>
+        <ScrollView contentContainerStyle={styles.inner} keyboardShouldPersistTaps="handled">
           {/* Logo & Header */}
           <View style={styles.header}>
             <View style={styles.logoBadge}>
@@ -50,50 +132,202 @@ export default function LoginScreen() {
             </View>
             <Text style={styles.title}>PQM Delivery Partner</Text>
             <Text style={styles.subtitle}>Driver Dispatch & Order Fulfillment Portal</Text>
+
+            {/* Mode Switcher Tabs */}
+            <View style={{ flexDirection: 'row', backgroundColor: '#1E293B', borderRadius: 12, p: 4, marginTop: 16, borderWidth: 1, borderColor: '#334155', width: '100%' }}>
+              <TouchableOpacity
+                onPress={() => setAuthMode('LOGIN')}
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: authMode === 'LOGIN' ? '#F59E0B' : 'transparent', alignItems: 'center' }}
+              >
+                <Text style={{ fontWeight: '800', color: authMode === 'LOGIN' ? '#0F172A' : '#94A3B8', fontSize: 13 }}>Driver Sign In</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => setAuthMode('REGISTER')}
+                style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: authMode === 'REGISTER' ? '#F59E0B' : 'transparent', alignItems: 'center' }}
+              >
+                <Text style={{ fontWeight: '800', color: authMode === 'REGISTER' ? '#0F172A' : '#94A3B8', fontSize: 13 }}>New Driver Sign Up</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <Text style={styles.label}>Driver Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="delivery@restaurant.com"
-              placeholderTextColor="#64748B"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+          {/* LOGIN FORM */}
+          {authMode === 'LOGIN' ? (
+            <View style={styles.form}>
+              <Text style={styles.label}>Driver Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="driver@example.com"
+                placeholderTextColor="#64748B"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              placeholderTextColor="#64748B"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#64748B"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handleLogin}
-              disabled={loading}
-              activeOpacity={0.8}
-            >
-              {loading ? (
-                <ActivityIndicator color="#0F172A" />
-              ) : (
-                <Text style={styles.buttonText}>Log In to Driver Portal ➔</Text>
-              )}
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleLogin}
+                disabled={loading}
+                activeOpacity={0.8}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#0F172A" />
+                ) : (
+                  <Text style={styles.buttonText}>Log In to Driver Portal ➔</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* REGISTER NEW DRIVER FORM */
+            <View style={styles.form}>
+              <Text style={styles.label}>Full Driver Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g. Ramesh Kumar"
+                placeholderTextColor="#64748B"
+                value={driverName}
+                onChangeText={setDriverName}
+              />
+
+              <Text style={styles.label}>Phone Number *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="+91 9876543210"
+                placeholderTextColor="#64748B"
+                value={driverPhone}
+                onChangeText={setDriverPhone}
+                keyboardType="phone-pad"
+              />
+
+              <Text style={styles.label}>Gmail Address *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="driver@gmail.com"
+                placeholderTextColor="#64748B"
+                value={driverEmail}
+                onChangeText={setDriverEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Base Operating City</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Coimbatore"
+                placeholderTextColor="#64748B"
+                value={driverCity}
+                onChangeText={setDriverCity}
+              />
+
+              <Text style={styles.label}>Password *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Minimum 6 characters"
+                placeholderTextColor="#64748B"
+                value={driverPassword}
+                onChangeText={setDriverPassword}
+                secureTextEntry
+              />
+
+              <TouchableOpacity
+                style={styles.button}
+                onPress={handleSendDriverOtp}
+                disabled={sendingOtp}
+                activeOpacity={0.8}
+              >
+                {sendingOtp ? (
+                  <ActivityIndicator color="#0F172A" />
+                ) : (
+                  <Text style={styles.buttonText}>Send Gmail Verification OTP ✉️ ➔</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          )}
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Authorized Restaurant Delivery Partners Only</Text>
+            <Text style={styles.footerText}>Authorized Restaurant Delivery Partners Portal</Text>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Gmail OTP Verification Modal */}
+      {isOtpModalOpen && (
+        <Modal visible transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ backgroundColor: '#1E293B', borderRadius: 20, padding: 24, width: '100%', maxWidth: 400, borderWidth: 1, borderColor: '#334155' }}>
+              <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFFFFF', textAlign: 'center' }}>
+                ✉️ Verify Driver Gmail Address
+              </Text>
+              <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginTop: 4, marginBottom: 16 }}>
+                Enter the 6-digit OTP code sent to {'\n'}
+                <Text style={{ fontWeight: '800', color: '#F59E0B' }}>{driverEmail}</Text>
+              </Text>
+
+              {debugOtpHint ? (
+                <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', padding: 8, borderRadius: 8, marginBottom: 16 }}>
+                  <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800', textAlign: 'center' }}>
+                    DEV OTP CODE: {debugOtpHint}
+                  </Text>
+                </View>
+              ) : null}
+
+              <TextInput
+                style={{
+                  backgroundColor: '#0F172A',
+                  borderWidth: 2,
+                  borderColor: '#F59E0B',
+                  borderRadius: 12,
+                  fontSize: 24,
+                  fontWeight: '900',
+                  letterSpacing: 6,
+                  textAlign: 'center',
+                  paddingVertical: 12,
+                  color: '#F59E0B',
+                  marginBottom: 20,
+                }}
+                placeholder="e.g. 589412"
+                placeholderTextColor="#64748B"
+                value={otpCode}
+                onChangeText={setOtpCode}
+                keyboardType="number-pad"
+                maxLength={6}
+                autoFocus
+              />
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => setIsOtpModalOpen(false)}
+                  style={{ flex: 1, backgroundColor: '#334155', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#94A3B8', fontWeight: '700' }}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={handleVerifyDriverOtp}
+                  disabled={verifyingOtp}
+                  style={{ flex: 1.5, backgroundColor: '#F59E0B', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+                >
+                  {verifyingOtp ? (
+                    <ActivityIndicator color="#0F172A" />
+                  ) : (
+                    <Text style={{ color: '#0F172A', fontWeight: '900' }}>Verify & Complete 🎉</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }

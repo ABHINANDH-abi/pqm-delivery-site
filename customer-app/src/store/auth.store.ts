@@ -53,6 +53,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
+  verifyOtpAndRegister: async (payload: any) => {
+    try {
+      set({ isLoading: true, error: null });
+      const data = await AuthService.verifyOtpAndRegister(payload);
+      await tokenStorage.setAccessToken(data.accessToken);
+      await tokenStorage.setRefreshToken(data.refreshToken);
+      set({ user: data.user, isAuthenticated: true, isLoading: false });
+    } catch (err: any) {
+      const message = err.response?.data?.error?.message || err.message || 'OTP Verification failed.';
+      set({ error: message, isLoading: false });
+      throw new Error(message);
+    }
+  },
+
   register: async (payload: RegisterPayload) => {
     try {
       set({ isLoading: true, error: null });

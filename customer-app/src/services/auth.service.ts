@@ -19,7 +19,29 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface VerifyOtpRegisterPayload extends RegisterPayload {
+  otp: string;
+  addressLine1?: string;
+  city?: string;
+  pincode?: string;
+  role?: string;
+}
+
 export class AuthService {
+  static async sendOtp(email: string, name?: string, phone?: string): Promise<{ message: string; email: string; otpDebug?: string }> {
+    const res = await apiClient.post<ApiSuccessResponse<{ message: string; email: string; otpDebug?: string }>>('/auth/send-otp', {
+      email,
+      name,
+      phone,
+    });
+    return res.data.data;
+  }
+
+  static async verifyOtpAndRegister(payload: VerifyOtpRegisterPayload): Promise<AuthResponseData> {
+    const res = await apiClient.post<ApiSuccessResponse<AuthResponseData>>('/auth/verify-otp-and-register', payload);
+    return res.data.data;
+  }
+
   static async register(payload: RegisterPayload): Promise<AuthResponseData> {
     const res = await apiClient.post<ApiSuccessResponse<AuthResponseData>>('/auth/register', payload);
     return res.data.data;
