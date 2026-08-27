@@ -83,16 +83,47 @@ export default function DeliveryHomeScreen() {
     }
   };
 
+  const [deliveryModalOrder, setDeliveryModalOrder] = useState<DeliveryOrder | null>(null);
+  const [enteredOtp, setEnteredOtp] = useState<string>('');
+  const [verifyingOtp, setVerifyingOtp] = useState<boolean>(false);
+
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
     try {
       setActionId(orderId);
       await deliveryApi.updateStatus(orderId, nextStatus);
-      Alert.alert('Status Updated', `Order status updated to ${nextStatus}`);
+      Alert.alert('Status Updated 🛵', `Order status updated to ${nextStatus.replace(/_/g, ' ')}`);
       fetchOrders();
     } catch (err: any) {
       Alert.alert('Error', err.response?.data?.error?.message || 'Failed to update delivery status');
     } finally {
       setActionId(null);
+    }
+  };
+
+  const handleVerifyDeliveryOtp = async () => {
+    if (!deliveryModalOrder) return;
+    const expectedOtp = deliveryModalOrder.id.slice(-4).toUpperCase();
+    if (enteredOtp.trim().toUpperCase() !== expectedOtp) {
+      Alert.alert(
+        'Incorrect OTP ❌',
+        `The 4-digit Delivery OTP entered (${enteredOtp}) does not match. Please ask customer for their 4-digit Delivery PIN shown in their app (${expectedOtp}).`
+      );
+      return;
+    }
+
+    try {
+      setVerifyingOtp(true);
+      await deliveryApi.updateStatus(deliveryModalOrder.id, 'DELIVERED');
+      Alert.alert(
+        'Delivery Verified & Completed! 🎉',
+        `Order #${expectedOtp} verified with Customer OTP! Delivery payment credited to your earnings.`
+      );
+      setDeliveryModalOrder(null);
+      fetchOrders();
+    } catch (err: any) {
+      Alert.alert('Error', err.response?.data?.error?.message || 'Failed to complete delivery');
+    } finally {
+      setVerifyingOtp(false);
     }
   };
 
@@ -291,10 +322,13 @@ export default function DeliveryHomeScreen() {
                               {order.status === 'OUT_FOR_DELIVERY' ? (
                                 <TouchableOpacity
                                   style={[styles.actionBtnPrimary, { backgroundColor: '#10B981' }]}
-                                  onPress={() => handleUpdateStatus(order.id, 'DELIVERED')}
+                                  onPress={() => {
+                                    setDeliveryModalOrder(order);
+                                    setEnteredOtp('');
+                                  }}
                                   disabled={isBusy}
                                 >
-                                  <Text style={styles.actionTextPrimary}>Mark Delivered ✅</Text>
+                                  <Text style={styles.actionTextPrimary}>Verify Customer OTP & Deliver 🔑</Text>
                                 </TouchableOpacity>
                               ) : null}
                             </View>
@@ -484,6 +518,73 @@ export default function DeliveryHomeScreen() {
           </Text>
         </TouchableOpacity>
       </View>
+
+      {/* Delivery Verification OTP Modal */}
+      {deliveryModalOrder && (
+        <Modal visible transparent animationType="slide">
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalTitle}>🔑 Delivery OTP Verification</Text>
+              <Text style={styles.modalSub}>Ask customer for their 4-digit Delivery PIN shown in their app</Text>
+
+              <View style={styles.modalOrderCard}>
+                <Text style={{ color: '#F59E0B', fontWeight: '800', fontSize: 14 }}>
+                  Order #{deliveryModalOrder.id.slice(-6).toUpperCase()}
+                </Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13, marginTop: 4 }}>
+                  Customer: {deliveryModalOrder.customer.name}
+                </Text>
+                <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 2 }}>
+                  Address: {deliveryModalOrder.deliveryAddressText}
+                </Text>
+
+                <View style={styles.paymentBox}>
+                  <Text style={{ color: '#34D399', fontWeight: '800', fontSize: 13 }}>
+                    {deliveryModalOrder.payment?.method === 'RAZORPAY'
+                      ? '⚡ UPI / ONLINE PAID (₹' + deliveryModalOrder.totalAmount + ')'
+                      : '💵 CASH ON DELIVERY — COLLECT ₹' + deliveryModalOrder.totalAmount + ' CASH'}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={{ color: '#94A3B8', fontSize: 12, fontWeight: '700', marginBottom: 6 }}>
+                Enter Customer 4-Digit PIN:
+              </Text>
+              <TextInput
+                style={styles.otpInput}
+                placeholder="e.g. 8921"
+                placeholderTextColor="#64748B"
+                value={enteredOtp}
+                onChangeText={setEnteredOtp}
+                keyboardType="number-pad"
+                maxLength={4}
+                autoFocus
+              />
+
+              <View style={styles.modalBtnRow}>
+                <TouchableOpacity
+                  style={styles.modalCancelBtn}
+                  onPress={() => setDeliveryModalOrder(null)}
+                >
+                  <Text style={styles.modalCancelText}>Cancel</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.modalVerifyBtn}
+                  onPress={handleVerifyDeliveryOtp}
+                  disabled={verifyingOtp}
+                >
+                  {verifyingOtp ? (
+                    <ActivityIndicator color="#0F172A" />
+                  ) : (
+                    <Text style={styles.modalVerifyText}>Verify & Deliver 🎉</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
     </SafeAreaView>
   );
 }
@@ -909,5 +1010,91 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: '#F59E0B',
     fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#1E293B',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  modalTitle: {
+    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  modalSub: {
+    color: '#94A3B8',
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: 4,
+    marginBottom: 16,
+  },
+  modalOrderCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#334155',
+  },
+  paymentBox: {
+    marginTop: 10,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: '#10B981',
+    padding: 8,
+    borderRadius: 8,
+  },
+  otpInput: {
+    backgroundColor: '#0F172A',
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#F59E0B',
+    color: '#F59E0B',
+    fontSize: 24,
+    fontWeight: '900',
+    letterSpacing: 8,
+    textAlign: 'center',
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  modalBtnRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalCancelBtn: {
+    flex: 1,
+    backgroundColor: '#334155',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalCancelText: {
+    color: '#94A3B8',
+    fontWeight: '700',
+    fontSize: 13,
+  },
+  modalVerifyBtn: {
+    flex: 1.5,
+    backgroundColor: '#10B981',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  modalVerifyText: {
+    color: '#0F172A',
+    fontWeight: '900',
+    fontSize: 13,
   },
 });

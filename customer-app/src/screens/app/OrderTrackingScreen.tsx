@@ -186,6 +186,35 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
             </View>
           </View>
 
+          {/* Zomato / Swiggy Delivery OTP Verification Card */}
+          {order.status !== 'CANCELLED' && order.status !== 'REJECTED' && order.status !== 'DELIVERED' && (
+            <View style={{
+              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+              borderColor: '#F59E0B',
+              borderWidth: 1.5,
+              borderRadius: 16,
+              padding: 16,
+              marginBottom: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}>
+              <View style={{ flex: 1, paddingRight: 10 }}>
+                <Text style={{ color: '#F59E0B', fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>
+                  SHARE WITH RIDER UPON ARRIVAL
+                </Text>
+                <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '700', marginTop: 2 }}>
+                  🔑 Delivery Verification PIN
+                </Text>
+              </View>
+              <View style={{ backgroundColor: '#F59E0B', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12 }}>
+                <Text style={{ color: '#0F172A', fontSize: 20, fontWeight: '900', letterSpacing: 3 }}>
+                  {order.id.slice(-4).toUpperCase()}
+                </Text>
+              </View>
+            </View>
+          )}
+
           {/* Edit Order Option Banner before OUT_FOR_DELIVERY */}
           {isEditable && (
             <TouchableOpacity style={styles.editBannerCard} onPress={openEditModal} activeOpacity={0.8}>
