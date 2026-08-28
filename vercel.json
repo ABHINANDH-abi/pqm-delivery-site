@@ -2,9 +2,9 @@
   "version": 2,
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/admin/:path*", "destination": "/landing-website/admin/index.html" },
-    { "source": "/admin", "destination": "/landing-website/admin/index.html" },
-    { "source": "/app/:path*", "destination": "/landing-website/app/index.html" },
-    { "source": "/app", "destination": "/landing-website/app/index.html" }
+    { "source": "/admin/(.*)", "destination": "/admin.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/app/(.*)", "destination": "/app.html" },
+    { "source": "/app", "destination": "/app.html" }
   ]
 }
