@@ -23,15 +23,15 @@ class EmailService {
           pass: smtpPass,
         },
       });
+      console.log(`[EmailService] ✅ SMTP configured for: ${smtpUser}`);
     } else {
-      // Transporter configured with standard SMTP pool for production
+      // No credentials — create a dummy transporter that will fail gracefully
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.SMTP_USER || 'qureshimandikitchen@gmail.com',
-          pass: process.env.SMTP_PASS || '',
-        },
+        host: 'localhost',
+        port: 25,
+        ignoreTLS: true,
       });
+      console.warn('[EmailService] ⚠️ SMTP_USER / SMTP_PASS not set. OTP emails will be skipped. Set env vars on Render to enable real email delivery.');
     }
   }
 

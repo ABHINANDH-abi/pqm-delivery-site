@@ -53,8 +53,12 @@ export class AuthService {
     console.log(`🔑 OTP CODE: [ ${otp} ]`);
     console.log(`======================================================\n`);
 
-    // Dispatch real email via Nodemailer SMTP
-    await emailService.sendOtpEmail(cleanEmail, otp, name);
+    // Dispatch real email via Nodemailer SMTP (fail-safe — OTP is valid even if email errors)
+    try {
+      await emailService.sendOtpEmail(cleanEmail, otp, name);
+    } catch (emailErr: any) {
+      console.warn(`[AuthService] Email dispatch failed (${emailErr.message}) — OTP still valid in system.`);
+    }
 
     return {
       message: `6-Digit Verification OTP sent to ${cleanEmail}`,
@@ -130,9 +134,9 @@ export class AuthService {
           userId: user.id,
           label: 'Home',
           addressLine1: input.addressLine1.trim(),
-          city: input.city ? input.city.trim() : 'Coimbatore',
-          state: 'Tamil Nadu',
-          pincode: input.pincode ? input.pincode.trim() : '641018',
+          city: input.city ? input.city.trim() : '',
+          state: '',
+          pincode: input.pincode ? input.pincode.trim() : '',
           isDefault: true,
         },
       });
