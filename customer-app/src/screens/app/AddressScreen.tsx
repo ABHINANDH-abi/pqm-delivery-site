@@ -64,88 +64,104 @@ export default function AddressScreen({ navigation }: Props) {
       }
     }
 
+    const applyLocationData = (line1: string, line2: string, city: string, state: string, pincode: string, landmark: string, latitude: number, longitude: number) => {
+      setFormData((prev) => ({
+        ...prev,
+        addressLine1: line1 || 'Current GPS Location',
+        addressLine2: line2 || '',
+        city: city || '',
+        state: state || '',
+        pincode: pincode || '',
+        landmark: landmark || '',
+        latitude,
+        longitude,
+      }));
+      setIsModalOpen(true);
+      Alert.alert(
+        '📍 Location Detected Successfully!',
+        `Location:\n${line1 || 'Current GPS Pin'}, ${city} ${pincode ? '- ' + pincode : ''}\nCoordinates: (${latitude.toFixed(4)}, ${longitude.toFixed(4)})\n\nPlease enter Flat / House / Door Number and tap "Save Address".`
+      );
+    };
+
+    const reverseGeocode = async (latitude: number, longitude: number) => {
+      let line1 = 'Detected Location';
+      let line2 = '';
+      let city = '';
+      let state = '';
+      let pincode = '';
+      let landmark = '';
+
+      // Try API 1: BigDataCloud (Fast CORS-friendly free API)
+      try {
+        const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`);
+        const bdcData = await res.json();
+        if (bdcData) {
+          city = bdcData.city || bdcData.locality || bdcData.principalSubdivision || '';
+          state = bdcData.principalSubdivision || '';
+          pincode = bdcData.postcode ? bdcData.postcode.replace(/\D/g, '') : '';
+          line1 = [bdcData.locality, bdcData.city].filter(Boolean).join(', ') || 'Current Location';
+          landmark = bdcData.locality || '';
+        }
+      } catch (e) {}
+
+      // Try API 2: OpenStreetMap Nominatim for street level precision
+      try {
+        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+        const data = await res.json();
+        if (data && data.address) {
+          const addr = data.address;
+          const road = addr.road || addr.pedestrian || addr.street || addr.building || '';
+          const suburb = addr.suburb || addr.neighbourhood || addr.residential || addr.subdistrict || '';
+          const detectedStreet = [road, suburb].filter(Boolean).join(', ');
+          if (detectedStreet) line1 = detectedStreet;
+
+          line2 = addr.city_district || addr.county || '';
+          if (addr.city || addr.town || addr.village) city = addr.city || addr.town || addr.village;
+          if (addr.state) state = addr.state;
+          const rawPin = addr.postcode ? addr.postcode.replace(/\D/g, '') : '';
+          if (rawPin && rawPin.length === 6) pincode = rawPin;
+          landmark = suburb || road || landmark;
+        }
+      } catch (e) {}
+
+      applyLocationData(line1, line2, city, state, pincode, landmark, latitude, longitude);
+    };
+
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
           try {
             const { latitude, longitude } = position.coords;
-            const res = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
-            );
-            const data = await res.json();
-
-            let line1 = 'Detected Current Location';
-            let line2 = '';
-            let city = '';
-            let state = '';
-            let pincode = '';
-            let landmark = '';
-
-            if (data) {
-              const addr = data.address || {};
-              const road = addr.road || addr.pedestrian || addr.street || addr.building || '';
-              const suburb = addr.suburb || addr.neighbourhood || addr.residential || addr.subdistrict || '';
-
-              line1 = [road, suburb].filter(Boolean).join(', ');
-              if (!line1 && data.display_name) {
-                line1 = data.display_name.split(',')[0] || 'Current Location';
-              }
-
-              line2 = addr.city_district || addr.county || addr.state_district || '';
-              city = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.state_district || addr.district || '';
-
-              if (!city && data.display_name) {
-                const parts = data.display_name.split(',');
-                city = parts[1] ? parts[1].trim() : parts[0].trim();
-              }
-
-              state = addr.state || (data.display_name ? data.display_name.split(',')[2]?.trim() : '') || '';
-
-              const rawPin = addr.postcode ? addr.postcode.replace(/\D/g, '') : '';
-              if (rawPin && rawPin.length === 6) {
-                pincode = rawPin;
-              } else if (data.display_name) {
-                const matchPin = data.display_name.match(/\b\d{6}\b/);
-                if (matchPin) pincode = matchPin[0];
-              }
-
-              landmark = suburb || road || '';
-            }
-
-            setFormData((prev) => ({
-              ...prev,
-              addressLine1: line1 || prev.addressLine1 || 'Current Location',
-              addressLine2: line2,
-              city: city || prev.city || '',
-              state: state || prev.state || '',
-              pincode: pincode || prev.pincode || '',
-              landmark,
-              latitude,
-              longitude,
-            }));
-
-            Alert.alert(
-              '📍 Real GPS Location Detected!',
-              `Detected Location:\n${line1 || 'Current GPS Pin'}, ${city} ${pincode ? '- ' + pincode : ''}\nCoordinates: (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
-            );
+            await reverseGeocode(latitude, longitude);
           } catch (err) {
-            Alert.alert('Location Warning', 'GPS Coordinates captured, but street name lookup failed. Please verify building name.');
+            Alert.alert('Location Notice', 'Coordinates captured. Please type your street name and door number.');
           } finally {
             setDetectingLocation(false);
           }
         },
-        (error) => {
+        async (error) => {
+          // Fallback to IP-based Geolocation if GPS hardware is turned off or blocked
+          try {
+            const ipRes = await fetch('https://ipapi.co/json/');
+            const ipData = await ipRes.json();
+            if (ipData && ipData.latitude && ipData.longitude) {
+              await reverseGeocode(ipData.latitude, ipData.longitude);
+              setDetectingLocation(false);
+              return;
+            }
+          } catch (e) {}
+
           setDetectingLocation(false);
           Alert.alert(
             '📍 Location Permission Required',
-            'Please turn ON GPS Location Services and allow location permission on your phone so Zomato-style map navigation can pin your exact address.'
+            'Please turn ON location services on your device so we can pin your delivery location automatically.'
           );
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
+        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
       );
     } else {
       setDetectingLocation(false);
-      Alert.alert('GPS Unavailable', 'Location API is not available on this browser/device.');
+      Alert.alert('GPS Unavailable', 'Location API is not supported on this browser/device.');
     }
   };
 
@@ -249,6 +265,41 @@ export default function AddressScreen({ navigation }: Props) {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Prominent Top GPS Location Detector Button */}
+          <TouchableOpacity
+            onPress={handleDetectLocation}
+            disabled={detectingLocation}
+            style={{
+              backgroundColor: '#1E293B',
+              paddingVertical: 14,
+              paddingHorizontal: 16,
+              borderRadius: 14,
+              borderWidth: 2,
+              borderColor: '#F59E0B',
+              marginBottom: 20,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              shadowColor: '#F59E0B',
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 8,
+              elevation: 4,
+            }}
+          >
+            {detectingLocation ? (
+              <ActivityIndicator color="#F59E0B" />
+            ) : (
+              <>
+                <Text style={{ fontSize: 18 }}>📍</Text>
+                <Text style={{ color: '#F59E0B', fontSize: 15, fontWeight: '900', textAlign: 'center' }}>
+                  Detect Current Location via GPS
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
           {addresses.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyTitle}>No addresses saved</Text>
