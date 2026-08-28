@@ -191,6 +191,39 @@ export default function DeliveryHomeScreen() {
         {/* TAB 1: DELIVERIES */}
         {mainTab === 'DELIVERIES' && (
           <View style={{ flex: 1 }}>
+            {/* Sticky Rider Dispatch Alert Banner */}
+            {availableOrders.length > 0 && (
+              <TouchableOpacity
+                onPress={() => setSubTab('AVAILABLE')}
+                style={{
+                  backgroundColor: 'rgba(245, 158, 11, 0.15)',
+                  borderColor: '#F59E0B',
+                  borderWidth: 1.5,
+                  borderRadius: 16,
+                  padding: 14,
+                  marginBottom: 16,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+                  <Text style={{ fontSize: 24 }}>🔔</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: '#F59E0B', fontWeight: '900', fontSize: 13 }}>
+                      🚨 NEW RIDER DISPATCH ALERT! ({availableOrders.length} Ready)
+                    </Text>
+                    <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 2 }}>
+                      Restaurant accepted Order #{availableOrders[0]?.id?.slice(-6)?.toUpperCase()}. Tap to view route & claim delivery!
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ backgroundColor: '#F59E0B', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 }}>
+                  <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 11 }}>CLAIM ➔</Text>
+                </View>
+              </TouchableOpacity>
+            )}
+
             {/* Top Sub-Filter Tabs */}
             <View style={styles.tabsContainer}>
               <TouchableOpacity
