@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,35 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Modal,
 } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
 import { deliveryApi, DeliveryOrder, OrderStatus } from '../../api/delivery.api';
 import { pushNotification } from '../../utils/notification';
+import { notificationsApi, AppNotification } from '../../api/notifications.api';
 
 type MainTab = 'DELIVERIES' | 'EARNINGS' | 'PROFILE';
 type SubTab = 'ASSIGNED' | 'AVAILABLE';
+
+const playDispatchSound = () => {
+  try {
+    if (typeof window !== 'undefined' && (window.AudioContext || (window as any).webkitAudioContext)) {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(880, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1320, ctx.currentTime + 0.4);
+      gain.gain.setValueAtTime(0.6, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.4);
+    }
+  } catch (e) {}
+};
 
 export default function DeliveryHomeScreen() {
   const user = useAuthStore((s) => s.user);
@@ -29,7 +51,20 @@ export default function DeliveryHomeScreen() {
   const [availableOrders, setAvailableOrders] = useState<DeliveryOrder[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [actionId, setActionId] = useState<string | null>(null);
-  const [prevAvailableCount, setPrevAvailableCount] = useState<number>(0);
+  
+  // Rider Notifications State
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [alertPopupOrder, setAlertPopupOrder] = useState<DeliveryOrder | null>(null);
+
+  const prevAvailableCountRef = useRef<number>(0);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await notificationsApi.getMyNotifications();
+      setNotifications(data || []);
+    } catch (e) {}
+  };
 
   const fetchOrders = async () => {
     try {
@@ -39,15 +74,19 @@ export default function DeliveryHomeScreen() {
         deliveryApi.getAvailableOrders(),
       ]);
 
-      if (available.length > prevAvailableCount && prevAvailableCount > 0) {
+      if (available.length > prevAvailableCountRef.current && prevAvailableCountRef.current >= 0) {
         const latest = available[0];
         if (latest) {
+          playDispatchSound();
+          setAlertPopupOrder(latest);
           pushNotification.notifyNewOrderAlert(latest.id, latest.deliveryAddressText, latest.totalAmount);
         }
       }
-      setPrevAvailableCount(available.length);
+
+      prevAvailableCountRef.current = available.length;
       setAssignedOrders(assigned);
       setAvailableOrders(available);
+      fetchNotifications();
     } catch (err) {
       console.log('Failed to fetch delivery orders:', err);
     } finally {
@@ -57,9 +96,8 @@ export default function DeliveryHomeScreen() {
 
   useEffect(() => {
     fetchOrders();
-    const interval = setInterval(fetchOrders, 6000);
+    const interval = setInterval(fetchOrders, 4000); // 4-second fast refresh loop
 
-    // Live GPS Location Streaming to Backend for Customer Map Tracking
     const gpsInterval = setInterval(() => {
       if (isOnline && typeof navigator !== 'undefined' && navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
@@ -67,13 +105,12 @@ export default function DeliveryHomeScreen() {
             deliveryApi.updateLocation(pos.coords.latitude, pos.coords.longitude, true).catch(() => {});
           },
           () => {
-            // Fallback default Coimbatore coordinates if hardware GPS times out
             deliveryApi.updateLocation(11.0168, 76.9558, true).catch(() => {});
           },
           { enableHighAccuracy: true, timeout: 5000 }
         );
       }
-    }, 10000);
+    }, 8000);
 
     return () => {
       clearInterval(interval);
@@ -175,14 +212,41 @@ export default function DeliveryHomeScreen() {
           <Text style={styles.userName}>{user?.name || 'Delivery Partner'}</Text>
         </View>
 
-        <View style={styles.onlineContainer}>
-          <Text style={styles.onlineLabel}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
-          <Switch
-            value={isOnline}
-            onValueChange={handleToggleOnline}
-            trackColor={{ false: '#334155', true: '#10B981' }}
-            thumbColor="#FFFFFF"
-          />
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+          {/* Rider Notification Bell Button */}
+          <TouchableOpacity
+            onPress={() => setIsNotificationsOpen(true)}
+            style={{
+              backgroundColor: '#1E293B',
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: '#334155',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <Text style={{ fontSize: 16 }}>🔔</Text>
+            {notifications.filter((n) => !n.isRead).length > 0 && (
+              <View style={{ backgroundColor: '#EF4444', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 1 }}>
+                <Text style={{ color: '#FFFFFF', fontSize: 10, fontWeight: '900' }}>
+                  {notifications.filter((n) => !n.isRead).length}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <View style={styles.onlineContainer}>
+            <Text style={styles.onlineLabel}>{isOnline ? 'ONLINE' : 'OFFLINE'}</Text>
+            <Switch
+              value={isOnline}
+              onValueChange={handleToggleOnline}
+              trackColor={{ false: '#334155', true: '#10B981' }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
         </View>
       </View>
 
@@ -660,13 +724,104 @@ export default function DeliveryHomeScreen() {
                   onPress={handleVerifyDeliveryOtp}
                   disabled={verifyingOtp}
                 >
-                  {verifyingOtp ? (
-                    <ActivityIndicator color="#0F172A" />
-                  ) : (
-                    <Text style={styles.modalVerifyText}>Verify & Deliver 🎉</Text>
-                  )}
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* RIDER DISPATCH ALERT POPUP MODAL */}
+      {alertPopupOrder && (
+        <Modal visible transparent animationType="fade">
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+            <View style={{ backgroundColor: '#1E293B', borderRadius: 24, padding: 24, width: '100%', maxWidth: 420, borderWidth: 2, borderColor: '#F59E0B' }}>
+              <Text style={{ fontSize: 36, textAlign: 'center', marginBottom: 8 }}>🔔</Text>
+              <Text style={{ fontSize: 20, fontWeight: '900', color: '#F59E0B', textAlign: 'center' }}>
+                🚨 NEW DISPATCH ALERT!
+              </Text>
+              <Text style={{ fontSize: 13, color: '#FFFFFF', textAlign: 'center', marginTop: 6, fontWeight: '700' }}>
+                Restaurant Accepted Order #{alertPopupOrder.id.slice(-6).toUpperCase()}
+              </Text>
+              
+              <View style={{ backgroundColor: '#0F172A', padding: 14, borderRadius: 14, marginVertical: 16, borderWidth: 1, borderColor: '#334155' }}>
+                <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 14 }}>
+                  Delivery Fee Earning: +₹{alertPopupOrder.deliveryFee || 50}
+                </Text>
+                <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 4 }}>
+                  Customer: {alertPopupOrder.customer?.name}
+                </Text>
+                <Text style={{ color: '#94A3B8', fontSize: 12, marginTop: 2 }}>
+                  Address: {alertPopupOrder.deliveryAddressText}
+                </Text>
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: 10 }}>
+                <TouchableOpacity
+                  onPress={() => setAlertPopupOrder(null)}
+                  style={{ flex: 1, backgroundColor: '#334155', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#94A3B8', fontWeight: '700' }}>Dismiss</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={() => {
+                    const targetId = alertPopupOrder.id;
+                    setAlertPopupOrder(null);
+                    handleAcceptOrder(targetId);
+                  }}
+                  style={{ flex: 1.5, backgroundColor: '#F59E0B', paddingVertical: 14, borderRadius: 12, alignItems: 'center' }}
+                >
+                  <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 13 }}>CLAIM ORDER NOW 🚀</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* RIDER NOTIFICATION INBOX MODAL */}
+      {isNotificationsOpen && (
+        <Modal visible transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'flex-end' }}>
+            <View style={{ backgroundColor: '#1E293B', borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: '80%' }}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: '800', color: '#FFFFFF' }}>🔔 Rider Notification Alerts</Text>
+                <TouchableOpacity onPress={() => setIsNotificationsOpen(false)}>
+                  <Text style={{ color: '#F59E0B', fontWeight: '800', fontSize: 14 }}>Close</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView showsVerticalScrollIndicator={false}>
+                {notifications.length === 0 ? (
+                  <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+                    <Text style={{ color: '#64748B', fontSize: 13 }}>No alerts yet. Notifications will appear when kitchen accepts orders.</Text>
+                  </View>
+                ) : (
+                  notifications.map((item) => (
+                    <View
+                      key={item.id}
+                      style={{
+                        backgroundColor: item.isRead ? '#0F172A' : 'rgba(245, 158, 11, 0.1)',
+                        borderColor: item.isRead ? '#334155' : '#F59E0B',
+                        borderWidth: 1,
+                        borderRadius: 14,
+                        padding: 14,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <Text style={{ color: item.isRead ? '#94A3B8' : '#F59E0B', fontWeight: '800', fontSize: 13 }}>
+                        {item.title}
+                      </Text>
+                      <Text style={{ color: '#FFFFFF', fontSize: 12, marginTop: 4, lineHeight: 18 }}>
+                        {item.body}
+                      </Text>
+                      <Text style={{ color: '#64748B', fontSize: 10, marginTop: 6 }}>
+                        {new Date(item.createdAt).toLocaleTimeString()}
+                      </Text>
+                    </View>
+                  ))
+                )}
+              </ScrollView>
             </View>
           </View>
         </Modal>
