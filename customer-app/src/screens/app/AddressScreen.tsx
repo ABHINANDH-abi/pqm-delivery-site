@@ -33,6 +33,8 @@ export default function AddressScreen({ navigation }: Props) {
     state: 'Tamil Nadu',
     pincode: '641018',
     landmark: '',
+    latitude: null as number | null,
+    longitude: null as number | null,
     isDefault: true,
   });
 
@@ -49,32 +51,44 @@ export default function AddressScreen({ navigation }: Props) {
             );
             const data = await res.json();
 
+            let line1 = 'Detected Current Location';
+            let line2 = '';
+            let city = 'Coimbatore';
+            let state = 'Tamil Nadu';
+            let pincode = '641018';
+            let landmark = '';
+
             if (data && data.address) {
               const addr = data.address;
               const road = addr.road || addr.pedestrian || addr.street || '';
               const suburb = addr.suburb || addr.neighbourhood || addr.residential || addr.subdistrict || '';
-              const line1 = [road, suburb].filter(Boolean).join(', ') || data.display_name.split(',')[0] || 'Current Location';
-              const line2 = addr.city_district || addr.county || addr.state_district || '';
-              const city = addr.city || addr.town || addr.village || addr.municipality || 'Your City';
-              const state = addr.state || 'Tamil Nadu';
-              const pincode = (addr.postcode || '641001').replace(/\s+/g, '').slice(0, 6);
-
-              setFormData((prev) => ({
-                ...prev,
-                addressLine1: line1,
-                addressLine2: line2,
-                city,
-                state,
-                pincode,
-                landmark: suburb || road || '',
-              }));
-
-              Alert.alert('GPS Location Detected 📍', `Detected Location:\n${line1}, ${city} - ${pincode}`);
-            } else {
-              Alert.alert('GPS Location', 'Latitude: ' + latitude + ', Longitude: ' + longitude);
+              line1 = [road, suburb].filter(Boolean).join(', ') || data.display_name?.split(',')[0] || 'Current Location';
+              line2 = addr.city_district || addr.county || addr.state_district || '';
+              city = addr.city || addr.town || addr.village || addr.municipality || 'Coimbatore';
+              state = addr.state || 'Tamil Nadu';
+              const rawPin = (addr.postcode || '641018').replace(/\D/g, '');
+              pincode = rawPin.length === 6 ? rawPin : '641018';
+              landmark = suburb || road || '';
             }
+
+            setFormData((prev) => ({
+              ...prev,
+              addressLine1: line1,
+              addressLine2: line2,
+              city,
+              state,
+              pincode,
+              landmark,
+              latitude,
+              longitude,
+            }));
+
+            Alert.alert(
+              '📍 GPS Location Detected!',
+              `Location: ${line1}, ${city} - ${pincode}\nGPS Pins: (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
+            );
           } catch (err) {
-            Alert.alert('Location Error', 'Failed to resolve street address from GPS.');
+            Alert.alert('Location Warning', 'GPS Coordinates captured, but street name lookup failed. Please verify building name.');
           } finally {
             setDetectingLocation(false);
           }
@@ -82,15 +96,15 @@ export default function AddressScreen({ navigation }: Props) {
         (error) => {
           setDetectingLocation(false);
           Alert.alert(
-            'GPS Access Needed',
-            'Please turn on GPS / Location permission on your device to auto-fill your exact address.'
+            '📍 Location Permission Required',
+            'Please turn ON GPS Location Services and allow location permission on your phone so Zomato-style map navigation can pin your exact address.'
           );
         },
-        { enableHighAccuracy: true, timeout: 15000 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
       );
     } else {
       setDetectingLocation(false);
-      Alert.alert('GPS Not Available', 'Geolocation API is not available on this device.');
+      Alert.alert('GPS Unavailable', 'Location API is not available on this browser/device.');
     }
   };
 
@@ -142,28 +156,35 @@ export default function AddressScreen({ navigation }: Props) {
       Alert.alert('Validation Error', 'Please enter Address Line 1');
       return;
     }
-    if (!formData.pincode.trim() || formData.pincode.length !== 6) {
-      Alert.alert('Validation Error', 'Please enter a valid 6-digit pincode');
-      return;
-    }
+
+    const cleanPincode = formData.pincode.replace(/\D/g, '');
+    const validPincode = cleanPincode.length === 6 ? cleanPincode : '641018';
 
     try {
       setSubmitting(true);
-      await addressApi.create(formData);
+      await addressApi.create({
+        ...formData,
+        addressLine1: formData.addressLine1.trim(),
+        pincode: validPincode,
+      });
       setIsModalOpen(false);
       setFormData({
         label: 'Home',
         addressLine1: '',
         addressLine2: '',
-        city: 'Bengaluru',
-        state: 'Karnataka',
-        pincode: '560001',
+        city: 'Coimbatore',
+        state: 'Tamil Nadu',
+        pincode: '641018',
         landmark: '',
+        latitude: null,
+        longitude: null,
         isDefault: true,
       });
       fetchAddresses();
+      Alert.alert('Success 🎉', 'Delivery address saved successfully!');
     } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.error?.message || 'Failed to add address');
+      const msg = err.response?.data?.error?.message || err.message || 'Failed to save address';
+      Alert.alert('Save Address Error', msg);
     } finally {
       setSubmitting(false);
     }

@@ -10,6 +10,8 @@ export interface Address {
   state: string;
   pincode: string;
   landmark?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
@@ -23,6 +25,8 @@ export interface CreateAddressPayload {
   state: string;
   pincode: string;
   landmark?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   isDefault?: boolean;
 }
 
