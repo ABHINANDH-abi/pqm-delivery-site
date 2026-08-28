@@ -199,23 +199,22 @@ export default function AddressScreen({ navigation }: Props) {
     }
 
     const cleanPincode = formData.pincode.replace(/\D/g, '');
-    const validPincode = cleanPincode.length === 6 ? cleanPincode : '641018';
 
     try {
       setSubmitting(true);
       await addressApi.create({
         ...formData,
         addressLine1: formData.addressLine1.trim(),
-        pincode: validPincode,
+        pincode: cleanPincode,
       });
       setIsModalOpen(false);
       setFormData({
         label: 'Home',
         addressLine1: '',
         addressLine2: '',
-        city: 'Coimbatore',
-        state: 'Tamil Nadu',
-        pincode: '641018',
+        city: '',
+        state: '',
+        pincode: '',
         landmark: '',
         latitude: null,
         longitude: null,
