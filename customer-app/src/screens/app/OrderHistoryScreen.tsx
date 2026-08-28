@@ -11,6 +11,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { ordersApi, Order, OrderStatus } from '../../api/orders.api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../navigation/AppNavigator';
@@ -42,6 +43,12 @@ export default function OrderHistoryScreen({ navigation }: Props) {
   useEffect(() => {
     fetchOrders();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchOrders();
+    }, [])
+  );
 
   const openRatingModal = (order: Order) => {
     setRatingModalOrder(order);

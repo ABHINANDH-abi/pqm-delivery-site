@@ -13,7 +13,9 @@ import {
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore, CartProduct } from '../../store/cart.store';
 import { apiClient } from '../../api/client';
+import { ordersApi, Order } from '../../api/orders.api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import { useFocusEffect } from '@react-navigation/native';
 import { AppStackParamList } from '../../navigation/AppNavigator';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Home'>;
@@ -47,6 +49,15 @@ export default function HomeScreen({ navigation }: Props) {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+
+  const fetchActiveOrder = async () => {
+    try {
+      const orders = await ordersApi.getMyOrders();
+      const active = (orders || []).find((o) => ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'ASSIGNED', 'OUT_FOR_DELIVERY'].includes(o.status));
+      setActiveOrder(active || null);
+    } catch (e) {}
+  };
 
   const fetchMenuData = async () => {
     try {
@@ -68,6 +79,12 @@ export default function HomeScreen({ navigation }: Props) {
   useEffect(() => {
     fetchMenuData();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchActiveOrder();
+    }, [])
+  );
 
   const handleAddToCart = (prod: Product) => {
     const cartProduct: CartProduct = {
@@ -112,6 +129,29 @@ export default function HomeScreen({ navigation }: Props) {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Active Ongoing Order Tracker Banner */}
+      {activeOrder && (
+        <TouchableOpacity
+          style={styles.activeOrderBanner}
+          onPress={() => navigation.navigate('OrderTracking', { orderId: activeOrder.id })}
+          activeOpacity={0.85}
+        >
+          <View style={styles.activeOrderHeader}>
+            <Text style={{ fontSize: 24, marginRight: 12 }}>🛵</Text>
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Text style={styles.activeOrderTitle}>ORDER IN PROGRESS</Text>
+                <Text style={styles.activeOrderBadge}>#{activeOrder.id.slice(-6).toUpperCase()}</Text>
+              </View>
+              <Text style={styles.activeOrderStatusText}>
+                Status: {activeOrder.status.replace(/_/g, ' ')}
+              </Text>
+              <Text style={styles.activeOrderTrackHint}>Tap here to track live delivery timeline →</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Search Input */}
       <View style={styles.searchContainer}>
@@ -527,5 +567,51 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '800',
     fontSize: 13,
+  },
+  activeOrderBanner: {
+    backgroundColor: '#1E293B',
+    borderColor: '#F59E0B',
+    borderWidth: 1.5,
+    borderRadius: 14,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 6,
+    padding: 12,
+    shadowColor: '#F59E0B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  activeOrderHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  activeOrderTitle: {
+    color: '#F59E0B',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 0.8,
+  },
+  activeOrderBadge: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+    backgroundColor: '#334155',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  activeOrderStatusText: {
+    color: '#10B981',
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 2,
+  },
+  activeOrderTrackHint: {
+    color: '#94A3B8',
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 2,
   },
 });
