@@ -49,7 +49,15 @@ export class AddressesService {
 
     return prisma.address.create({
       data: {
-        ...data,
+        label: data.label,
+        addressLine1: data.addressLine1,
+        addressLine2: data.addressLine2 || undefined,
+        city: data.city || 'Coimbatore',
+        state: data.state || 'Tamil Nadu',
+        pincode: data.pincode || '641018',
+        landmark: data.landmark || undefined,
+        latitude: data.latitude || undefined,
+        longitude: data.longitude || undefined,
         userId,
         isDefault: shouldBeDefault,
       },

@@ -42,6 +42,14 @@ export interface Order {
     status: string;
     amount: string | number;
   };
+  deliveryPartner?: {
+    id: string;
+    name: string;
+    phone?: string;
+    vehicleType?: string;
+    vehicleNumber?: string;
+    rating?: number;
+  };
   acceptedAt?: string;
   preparingAt?: string;
   readyAt?: string;

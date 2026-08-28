@@ -8,7 +8,7 @@ export class NotificationsController {
       const userId = req.user!.userId;
       const { fcmToken, deviceType } = req.body;
       const user = await notificationsService.registerFcmToken(userId, fcmToken, deviceType);
-      return sendSuccess(res, { userId: user.id, fcmToken: user.fcmToken }, 'FCM Token registered');
+      return sendSuccess(res, { userId, fcmToken }, 'FCM Token registered');
     } catch (error) {
       next(error);
     }

@@ -17,7 +17,7 @@ export class DeliveryService {
         data: {
           userId,
           vehicleType: 'BIKE',
-          isAvailable: true,
+          status: 'AVAILABLE',
         },
       });
     }
@@ -169,12 +169,12 @@ export class DeliveryService {
         },
       });
 
-      // If delivered and payment is COD, mark payment as COMPLETED
+      // If delivered and payment is COD, mark payment as PAID
       if (nextStatus === OrderStatus.DELIVERED && resOrder.payment) {
         await tx.payment.update({
           where: { id: resOrder.payment.id },
           data: {
-            status: PaymentStatus.COMPLETED,
+            status: PaymentStatus.PAID,
             paidAt: new Date(),
           },
         });
@@ -195,10 +195,9 @@ export class DeliveryService {
     return prisma.deliveryPartner.update({
       where: { id: partner.id },
       data: {
-        currentLat: latitude,
-        currentLng: longitude,
-        isAvailable: isOnline,
-        lastLocationUpdate: new Date(),
+        currentLatitude: latitude,
+        currentLongitude: longitude,
+        status: isOnline ? 'AVAILABLE' : 'OFFLINE',
       },
     });
   }

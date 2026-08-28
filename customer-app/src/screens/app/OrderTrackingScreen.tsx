@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  Linking,
 } from 'react-native';
 import { ordersApi, Order, OrderStatus } from '../../api/orders.api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -234,16 +235,16 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
                 </View>
                 <View>
                   <Text style={{ color: '#38BDF8', fontSize: 10, fontWeight: '900', letterSpacing: 1 }}>ASSIGNED DELIVERY RIDER</Text>
-                  <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>{order.deliveryPartner.user?.name || 'Ramesh Kumar'}</Text>
+                  <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>{order.deliveryPartner.name || 'Ramesh Kumar'}</Text>
                   <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 2 }}>
                     {order.deliveryPartner.vehicleType || 'Motorcycle'} • {order.deliveryPartner.vehicleNumber || 'TN 37 AB 1234'} • ⭐ 4.9
                   </Text>
                 </View>
               </View>
 
-              {order.deliveryPartner.user?.phone && (
+              {order.deliveryPartner.phone && (
                 <TouchableOpacity
-                  onPress={() => Linking.openURL(`tel:${order.deliveryPartner?.user?.phone}`)}
+                  onPress={() => Linking.openURL(`tel:${order.deliveryPartner?.phone}`)}
                   style={{ backgroundColor: '#10B981', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 10 }}
                 >
                   <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 12 }}>📞 Call</Text>
@@ -301,9 +302,9 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
 
           {/* Flaw #3: Zomato-Style Quick-Dial Floating Action Buttons */}
           <View style={{ flexDirection: 'row', gap: 10, marginBottom: 16 }}>
-            {order.deliveryPartner?.user?.phone ? (
+            {order.deliveryPartner?.phone ? (
               <TouchableOpacity
-                onPress={() => Linking.openURL(`tel:${order.deliveryPartner?.user?.phone}`)}
+                onPress={() => Linking.openURL(`tel:${order.deliveryPartner?.phone}`)}
                 style={{
                   flex: 1,
                   backgroundColor: '#10B981',
@@ -321,7 +322,7 @@ export default function OrderTrackingScreen({ route, navigation }: Props) {
               >
                 <Text style={{ fontSize: 14 }}>📞</Text>
                 <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 12 }}>
-                  Call Rider ({order.deliveryPartner.user.name.split(' ')[0]})
+                  Call Rider ({order.deliveryPartner.name.split(' ')[0]})
                 </Text>
               </TouchableOpacity>
             ) : null}

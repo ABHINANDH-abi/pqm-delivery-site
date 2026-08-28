@@ -134,7 +134,7 @@ export default function LoginScreen() {
             <Text style={styles.subtitle}>Driver Dispatch & Order Fulfillment Portal</Text>
 
             {/* Mode Switcher Tabs */}
-            <View style={{ flexDirection: 'row', backgroundColor: '#1E293B', borderRadius: 12, p: 4, marginTop: 16, borderWidth: 1, borderColor: '#334155', width: '100%' }}>
+            <View style={{ flexDirection: 'row', backgroundColor: '#1E293B', borderRadius: 12, padding: 4, marginTop: 16, borderWidth: 1, borderColor: '#334155', width: '100%' }}>
               <TouchableOpacity
                 onPress={() => setAuthMode('LOGIN')}
                 style={{ flex: 1, paddingVertical: 10, borderRadius: 10, backgroundColor: authMode === 'LOGIN' ? '#F59E0B' : 'transparent', alignItems: 'center' }}

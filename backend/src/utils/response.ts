@@ -7,9 +7,11 @@ import { ApiSuccessResponse, ApiErrorResponse } from '../types/api';
 export function sendSuccess<T>(
   res: Response,
   data: T,
-  options: { statusCode?: number; message?: string } = {},
+  optionsOrMessage: { statusCode?: number; message?: string } | string = {},
+  extraCode?: number,
 ): void {
-  const { statusCode = 200, message } = options;
+  const options = typeof optionsOrMessage === 'string' ? { message: optionsOrMessage, statusCode: extraCode } : optionsOrMessage;
+  const { statusCode = extraCode || 200, message } = options;
 
   const body: ApiSuccessResponse<T> = {
     success: true,

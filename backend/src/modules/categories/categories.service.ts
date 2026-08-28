@@ -44,7 +44,13 @@ export class CategoriesService {
    */
   async createCategory(data: CreateCategoryInput) {
     return prisma.category.create({
-      data,
+      data: {
+        name: data.name,
+        description: data.description,
+        imageUrl: data.imageUrl,
+        sortOrder: data.sortOrder,
+        isActive: data.isActive,
+      },
     });
   }
 

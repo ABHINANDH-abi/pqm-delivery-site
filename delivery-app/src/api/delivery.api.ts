@@ -39,6 +39,8 @@ export interface DeliveryOrder {
     status: string;
     amount: string | number;
   };
+  rating?: number;
+  feedback?: string;
   createdAt: string;
 }
 

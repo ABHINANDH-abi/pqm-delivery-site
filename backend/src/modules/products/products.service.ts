@@ -85,8 +85,14 @@ export class ProductsService {
 
     return prisma.product.create({
       data: {
-        ...data,
+        name: data.name,
+        description: data.description,
         price: data.price,
+        imageUrl: data.imageUrl,
+        categoryId: data.categoryId,
+        isVeg: data.isVeg,
+        isAvailable: data.isAvailable,
+        sortOrder: data.sortOrder,
       },
       include: {
         category: true,

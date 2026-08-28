@@ -102,7 +102,7 @@ export class PaymentsService {
     const updatedPayment = await prisma.payment.update({
       where: { id: order.payment!.id },
       data: {
-        status: PaymentStatus.COMPLETED,
+        status: PaymentStatus.PAID,
         razorpayPaymentId,
         razorpaySignature,
         paidAt: new Date(),
@@ -132,7 +132,7 @@ export class PaymentsService {
           await prisma.payment.update({
             where: { id: payment.id },
             data: {
-              status: PaymentStatus.COMPLETED,
+              status: PaymentStatus.PAID,
               razorpayPaymentId,
               paidAt: new Date(),
             },

@@ -12,6 +12,7 @@ interface AuthState {
   initAuth: () => Promise<void>;
   login: (payload: LoginPayload) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
+  verifyOtpAndRegister: (payload: any) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }

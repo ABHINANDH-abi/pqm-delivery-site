@@ -11,6 +11,7 @@ import {
   Alert,
   Linking,
   Modal,
+  TextInput,
 } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
 import { deliveryApi, DeliveryOrder, OrderStatus } from '../../api/delivery.api';
@@ -728,6 +729,12 @@ export default function DeliveryHomeScreen() {
                   onPress={handleVerifyDeliveryOtp}
                   disabled={verifyingOtp}
                 >
+                  {verifyingOtp ? (
+                    <ActivityIndicator color="#0F172A" />
+                  ) : (
+                    <Text style={styles.modalVerifyText}>Verify & Deliver 🎉</Text>
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
           </View>

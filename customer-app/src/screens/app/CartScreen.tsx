@@ -10,6 +10,7 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
+  Modal,
 } from 'react-native';
 import { useCartStore } from '../../store/cart.store';
 import { addressApi, Address } from '../../api/address.api';
@@ -375,7 +376,7 @@ export default function CartScreen({ navigation }: Props) {
               Official Bill Breakdown for Qureshi Mandi Kitchen
             </Text>
 
-            <View style={{ backgroundColor: '#0F172A', borderRadius: 14, padding: 16, spaceBetween: 12, borderWidth: 1, borderColor: '#334155' }}>
+            <View style={{ backgroundColor: '#0F172A', borderRadius: 14, padding: 16, borderWidth: 1, borderColor: '#334155' }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
                 <Text style={{ color: '#CBD5E1', fontSize: 13 }}>Food Subtotal ({items.length} items)</Text>
                 <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{subtotal}</Text>
