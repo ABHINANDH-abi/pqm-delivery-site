@@ -8,31 +8,18 @@ class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
-    const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
-    const smtpPort = parseInt(process.env.SMTP_PORT || '587', 10);
-    const smtpUser = process.env.SMTP_USER || '';
-    const smtpPass = process.env.SMTP_PASS || '';
+    const smtpUser = process.env.SMTP_USER || '6abhi6nad6@gmail.com';
+    const smtpPass = (process.env.SMTP_PASS || 'tsdypfwbzkmmyouc').replace(/\s+/g, '');
 
-    if (smtpUser && smtpPass) {
-      this.transporter = nodemailer.createTransport({
-        host: smtpHost,
-        port: smtpPort,
-        secure: smtpPort === 465,
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      });
-      console.log(`[EmailService] ✅ SMTP configured for: ${smtpUser}`);
-    } else {
-      // No credentials — create a dummy transporter that will fail gracefully
-      this.transporter = nodemailer.createTransport({
-        host: 'localhost',
-        port: 25,
-        ignoreTLS: true,
-      });
-      console.warn('[EmailService] ⚠️ SMTP_USER / SMTP_PASS not set. OTP emails will be skipped. Set env vars on Render to enable real email delivery.');
-    }
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: smtpUser,
+        pass: smtpPass,
+      },
+    });
+
+    console.log(`[EmailService] ✅ Real Gmail SMTP initialized for: ${smtpUser}`);
   }
 
   /**

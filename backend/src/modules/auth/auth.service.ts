@@ -53,12 +53,10 @@ export class AuthService {
     console.log(`🔑 OTP CODE: [ ${otp} ]`);
     console.log(`======================================================\n`);
 
-    // Dispatch real email via Nodemailer SMTP (fail-safe — OTP is valid even if email errors)
-    try {
-      await emailService.sendOtpEmail(cleanEmail, otp, name);
-    } catch (emailErr: any) {
-      console.warn(`[AuthService] Email dispatch failed (${emailErr.message}) — OTP still valid in system.`);
-    }
+    // Dispatch real email via Nodemailer SMTP asynchronously in background (instant 200 response)
+    emailService.sendOtpEmail(cleanEmail, otp, name).catch((emailErr) => {
+      console.warn(`[AuthService] Email dispatch note (${emailErr.message}) — OTP code active in system.`);
+    });
 
     return {
       message: `6-Digit Verification OTP sent to ${cleanEmail}`,
