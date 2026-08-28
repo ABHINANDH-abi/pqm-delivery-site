@@ -1,12 +1,12 @@
 {
   "version": 2,
   "name": "qureshi-mandi-landing",
-  "cleanUrls": true,
-  "rewrites": [
-    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
-    { "source": "/admin", "destination": "/admin/index.html" },
-    { "source": "/app/(.*)", "destination": "/app/index.html" },
-    { "source": "/app", "destination": "/app/index.html" },
-    { "source": "/", "destination": "/index.html" }
+  "routes": [
+    { "src": "/admin/(.*)", "dest": "/admin/index.html" },
+    { "src": "/admin", "dest": "/admin/index.html" },
+    { "src": "/app/(.*)", "dest": "/app/index.html" },
+    { "src": "/app", "dest": "/app/index.html" },
+    { "handle": "filesystem" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
