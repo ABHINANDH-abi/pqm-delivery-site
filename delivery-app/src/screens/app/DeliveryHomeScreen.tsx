@@ -57,13 +57,25 @@ export default function DeliveryHomeScreen() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [alertPopupOrder, setAlertPopupOrder] = useState<DeliveryOrder | null>(null);
+  const [notificationPermission, setNotificationPermission] = useState<string>(pushNotification.getPermissionState());
 
-  const prevAvailableCountRef = useRef<number>(0);
+  const prevAvailableCountRef = useRef<number>(-1);
+  const notifiedIdsRef = useRef<Set<string>>(new Set());
 
   const fetchNotifications = async () => {
     try {
       const data = await notificationsApi.getMyNotifications();
-      setNotifications(data || []);
+      const list = data || [];
+      setNotifications(list);
+
+      // Trigger OS Status Bar Notification Banners for new unread notifications
+      list.forEach((item) => {
+        if (!item.isRead && !notifiedIdsRef.current.has(item.id)) {
+          notifiedIdsRef.current.add(item.id);
+          playDispatchSound();
+          pushNotification.sendOSNotification(item.title, item.body, item.id);
+        }
+      });
     } catch (e) {}
   };
 
@@ -75,7 +87,7 @@ export default function DeliveryHomeScreen() {
         deliveryApi.getAvailableOrders(),
       ]);
 
-      if (available.length > prevAvailableCountRef.current && prevAvailableCountRef.current >= 0) {
+      if (prevAvailableCountRef.current >= 0 && available.length > prevAvailableCountRef.current) {
         const latest = available[0];
         if (latest) {
           playDispatchSound();
@@ -254,6 +266,33 @@ export default function DeliveryHomeScreen() {
           </View>
         </View>
       </View>
+
+      {/* Permission Prompt Banner if Phone Status Bar Notifications not enabled */}
+      {notificationPermission !== 'granted' && (
+        <TouchableOpacity
+          onPress={async () => {
+            const granted = await pushNotification.requestPermission();
+            setNotificationPermission(pushNotification.getPermissionState());
+            if (granted) {
+              Alert.alert('Notifications Enabled 🎉', 'You will now receive system status bar alert banners on your phone when new orders are accepted!');
+            }
+          }}
+          style={{
+            backgroundColor: '#F59E0B',
+            paddingVertical: 10,
+            paddingHorizontal: 16,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <Text style={{ fontSize: 16 }}>🔔</Text>
+          <Text style={{ color: '#0F172A', fontWeight: '900', fontSize: 13, textAlign: 'center' }}>
+            Tap to Allow Phone Status Bar Notifications for Order Alerts
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* Main Content Area based on Selected Bottom Tab */}
       <View style={styles.mainContent}>
