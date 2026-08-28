@@ -95,6 +95,7 @@ export default function DeliveryHomeScreen() {
   };
 
   useEffect(() => {
+    pushNotification.requestPermission();
     fetchOrders();
     const interval = setInterval(fetchOrders, 4000); // 4-second fast refresh loop
 
@@ -120,6 +121,9 @@ export default function DeliveryHomeScreen() {
 
   const handleToggleOnline = async (val: boolean) => {
     setIsOnline(val);
+    if (val) {
+      pushNotification.requestPermission();
+    }
     try {
       await deliveryApi.updateLocation(11.0168, 76.9558, val);
     } catch (err) {
