@@ -29,9 +29,9 @@ export default function AddressScreen({ navigation }: Props) {
     label: 'Home',
     addressLine1: '',
     addressLine2: '',
-    city: 'Coimbatore',
-    state: 'Tamil Nadu',
-    pincode: '641018',
+    city: '',
+    state: '',
+    pincode: '',
     landmark: '',
     latitude: null as number | null,
     longitude: null as number | null,
@@ -53,39 +53,57 @@ export default function AddressScreen({ navigation }: Props) {
 
             let line1 = 'Detected Current Location';
             let line2 = '';
-            let city = 'Coimbatore';
-            let state = 'Tamil Nadu';
-            let pincode = '641018';
+            let city = '';
+            let state = '';
+            let pincode = '';
             let landmark = '';
 
-            if (data && data.address) {
-              const addr = data.address;
-              const road = addr.road || addr.pedestrian || addr.street || '';
+            if (data) {
+              const addr = data.address || {};
+              const road = addr.road || addr.pedestrian || addr.street || addr.building || '';
               const suburb = addr.suburb || addr.neighbourhood || addr.residential || addr.subdistrict || '';
-              line1 = [road, suburb].filter(Boolean).join(', ') || data.display_name?.split(',')[0] || 'Current Location';
+
+              line1 = [road, suburb].filter(Boolean).join(', ');
+              if (!line1 && data.display_name) {
+                line1 = data.display_name.split(',')[0] || 'Current Location';
+              }
+
               line2 = addr.city_district || addr.county || addr.state_district || '';
-              city = addr.city || addr.town || addr.village || addr.municipality || 'Coimbatore';
-              state = addr.state || 'Tamil Nadu';
-              const rawPin = (addr.postcode || '641018').replace(/\D/g, '');
-              pincode = rawPin.length === 6 ? rawPin : '641018';
+              city = addr.city || addr.town || addr.village || addr.municipality || addr.county || addr.state_district || addr.district || '';
+
+              if (!city && data.display_name) {
+                const parts = data.display_name.split(',');
+                city = parts[1] ? parts[1].trim() : parts[0].trim();
+              }
+
+              state = addr.state || (data.display_name ? data.display_name.split(',')[2]?.trim() : '') || '';
+
+              const rawPin = addr.postcode ? addr.postcode.replace(/\D/g, '') : '';
+              if (rawPin && rawPin.length === 6) {
+                pincode = rawPin;
+              } else if (data.display_name) {
+                const matchPin = data.display_name.match(/\b\d{6}\b/);
+                if (matchPin) pincode = matchPin[0];
+              }
+
               landmark = suburb || road || '';
             }
 
             setFormData((prev) => ({
               ...prev,
-              addressLine1: line1,
+              addressLine1: line1 || prev.addressLine1 || 'Current Location',
               addressLine2: line2,
-              city,
-              state,
-              pincode,
+              city: city || prev.city || '',
+              state: state || prev.state || '',
+              pincode: pincode || prev.pincode || '',
               landmark,
               latitude,
               longitude,
             }));
 
             Alert.alert(
-              '📍 GPS Location Detected!',
-              `Location: ${line1}, ${city} - ${pincode}\nGPS Pins: (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
+              '📍 Real GPS Location Detected!',
+              `Detected Location:\n${line1 || 'Current GPS Pin'}, ${city} ${pincode ? '- ' + pincode : ''}\nCoordinates: (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`
             );
           } catch (err) {
             Alert.alert('Location Warning', 'GPS Coordinates captured, but street name lookup failed. Please verify building name.');
