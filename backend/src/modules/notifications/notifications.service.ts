@@ -5,8 +5,25 @@ export class NotificationsService {
   /**
    * Register FCM Device Token for a user
    */
-  async registerFcmToken(_userId: string, fcmToken: string, _deviceType = 'ANDROID') {
-    console.log(`[FCM TOKEN REGISTERED] User: ${_userId} | Token: "${fcmToken}"`);
+  async registerFcmToken(userId: string, fcmToken: string, _deviceType = 'ANDROID') {
+    console.log(`[FCM TOKEN REGISTERED] User: ${userId} | Token: "${fcmToken}"`);
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { fcmToken },
+    });
+
+    const partner = await prisma.deliveryPartner.findUnique({
+      where: { userId },
+    });
+
+    if (partner) {
+      await prisma.deliveryPartner.update({
+        where: { id: partner.id },
+        data: { fcmToken },
+      });
+    }
+
     return { registered: true, fcmToken };
   }
 
@@ -100,24 +117,24 @@ export class NotificationsService {
     // 1. Send notification to Customer
     await this.sendNotification(order.customerId, title, bodyText, order.id);
 
-    // 2. DISPATCH ALERT TO ALL DELIVERY PARTNER PHONES WHEN ORDER IS ACCEPTED OR READY
+    // 2. DISPATCH FCM NOTIFICATION TO ALL DELIVERY PARTNER PHONES WHEN ORDER IS ACCEPTED OR READY
     if (status === OrderStatus.ACCEPTED || status === OrderStatus.PREPARING || status === OrderStatus.READY) {
       try {
         const deliveryPartners = await prisma.deliveryPartner.findMany({
           include: { user: true },
         });
 
-        const driverAlertTitle = `🛵 NEW DISPATCH ALERT! Order #${shortId}`;
-        const driverAlertBody = `Restaurant accepted Order #${shortId} (+₹${order.deliveryFee || 50} fee). Tap to view route & claim delivery!`;
+        const driverAlertTitle = `New Delivery Available 🛵`;
+        const driverAlertBody = `Order #${shortId} is ready for pickup (+₹${order.deliveryFee || 50} fee). Please check the app for pickup details.`;
 
         for (const partner of deliveryPartners) {
           if (partner.user?.id) {
             await this.sendNotification(partner.user.id, driverAlertTitle, driverAlertBody, order.id);
           }
         }
-        console.log(`[RIDER DISPATCH ALERT] Broadcasted Order #${shortId} alert to ${deliveryPartners.length} delivery partner phones.`);
+        console.log(`[FCM RIDER DISPATCH ALERT] Broadcasted Order #${shortId} push notification to ${deliveryPartners.length} delivery partner devices.`);
       } catch (err: any) {
-        console.warn(`[RIDER DISPATCH ALERT WARNING] ${err.message}`);
+        console.warn(`[FCM RIDER DISPATCH ALERT WARNING] ${err.message}`);
       }
     }
   }

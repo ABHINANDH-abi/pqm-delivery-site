@@ -63,6 +63,7 @@ model User {
   isActive       Boolean   @default(true)
   isEmailVerified Boolean  @default(false)
   profileImageUrl String?
+  fcmToken        String?
 
   // Relations
   addresses        Address[]
@@ -242,6 +243,7 @@ model DeliveryPartner {
   currentLongitude  Float?
   totalDeliveries   Int                   @default(0)
   rating            Float?
+  fcmToken          String?
 
   // Relations
   user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)

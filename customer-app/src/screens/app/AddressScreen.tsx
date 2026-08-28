@@ -10,6 +10,8 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  Platform,
+  PermissionsAndroid,
 } from 'react-native';
 import { addressApi, Address } from '../../api/address.api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -38,8 +40,29 @@ export default function AddressScreen({ navigation }: Props) {
     isDefault: true,
   });
 
-  const handleDetectLocation = () => {
+  const handleDetectLocation = async () => {
     setDetectingLocation(true);
+
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'We need your location to detect your delivery address.',
+            buttonPositive: 'Allow',
+            buttonNegative: 'Cancel',
+          }
+        );
+        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+          setDetectingLocation(false);
+          Alert.alert('Permission Denied', 'Location permission denied by user.');
+          return;
+        }
+      } catch (err) {
+        console.log('Android location permission error:', err);
+      }
+    }
 
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -118,7 +141,7 @@ export default function AddressScreen({ navigation }: Props) {
             'Please turn ON GPS Location Services and allow location permission on your phone so Zomato-style map navigation can pin your exact address.'
           );
         },
-        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 10000 }
       );
     } else {
       setDetectingLocation(false);
