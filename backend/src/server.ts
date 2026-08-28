@@ -42,10 +42,10 @@ app.use(
   }),
 );
 
-// Global rate limiter — 100 requests per 15 minutes per IP
+// Global rate limiter — permissive 10,000 requests per 15 minutes per IP
 const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 10000,
   standardHeaders: true,
   legacyHeaders: false,
   message: {

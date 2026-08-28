@@ -127,6 +127,28 @@ export default function AddressScreen({ navigation }: Props) {
       applyLocationData(line1, line2, city, state, pincode, landmark, latitude, longitude);
     };
 
+    const tryIpFallback = async () => {
+      try {
+        const ipRes = await fetch('https://ipapi.co/json/');
+        const ipData = await ipRes.json();
+        if (ipData && ipData.latitude && ipData.longitude) {
+          await reverseGeocode(ipData.latitude, ipData.longitude);
+          return true;
+        }
+      } catch (e) {}
+
+      try {
+        const bdcRes = await fetch('https://api.bigdatacloud.net/data/reverse-geocode-client?localityLanguage=en');
+        const bdcData = await bdcRes.json();
+        if (bdcData && bdcData.latitude && bdcData.longitude) {
+          await reverseGeocode(bdcData.latitude, bdcData.longitude);
+          return true;
+        }
+      } catch (e) {}
+
+      return false;
+    };
+
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -134,34 +156,29 @@ export default function AddressScreen({ navigation }: Props) {
             const { latitude, longitude } = position.coords;
             await reverseGeocode(latitude, longitude);
           } catch (err) {
-            Alert.alert('Location Notice', 'Coordinates captured. Please type your street name and door number.');
+            await tryIpFallback();
           } finally {
             setDetectingLocation(false);
           }
         },
         async (error) => {
-          // Fallback to IP-based Geolocation if GPS hardware is turned off or blocked
-          try {
-            const ipRes = await fetch('https://ipapi.co/json/');
-            const ipData = await ipRes.json();
-            if (ipData && ipData.latitude && ipData.longitude) {
-              await reverseGeocode(ipData.latitude, ipData.longitude);
-              setDetectingLocation(false);
-              return;
-            }
-          } catch (e) {}
-
+          const success = await tryIpFallback();
           setDetectingLocation(false);
-          Alert.alert(
-            '📍 Location Permission Required',
-            'Please turn ON location services on your device so we can pin your delivery location automatically.'
-          );
+          if (!success) {
+            Alert.alert(
+              '📍 Location Notice',
+              'Please type your street name and door number to save your delivery address.'
+            );
+          }
         },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
       );
     } else {
+      const success = await tryIpFallback();
       setDetectingLocation(false);
-      Alert.alert('GPS Unavailable', 'Location API is not supported on this browser/device.');
+      if (!success) {
+        Alert.alert('📍 Location Notice', 'Please type your street name and door number to save your delivery address.');
+      }
     }
   };
 
