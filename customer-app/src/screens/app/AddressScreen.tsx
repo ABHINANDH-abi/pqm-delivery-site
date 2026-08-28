@@ -44,27 +44,6 @@ export default function AddressScreen({ navigation }: Props) {
   const handleDetectLocation = async () => {
     setDetectingLocation(true);
 
-    if (Platform.OS === 'android') {
-      try {
-        const granted = await PermissionsAndroid.request(
-          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-          {
-            title: 'Location Permission',
-            message: 'We need your location to detect your delivery address.',
-            buttonPositive: 'Allow',
-            buttonNegative: 'Cancel',
-          }
-        );
-        if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-          setDetectingLocation(false);
-          Alert.alert('Permission Denied', 'Location permission denied by user.');
-          return;
-        }
-      } catch (err) {
-        console.log('Android location permission error:', err);
-      }
-    }
-
     const applyLocationData = (line1: string, line2: string, city: string, state: string, pincode: string, landmark: string, latitude: number, longitude: number) => {
       setFormData((prev) => ({
         ...prev,
@@ -150,64 +129,64 @@ export default function AddressScreen({ navigation }: Props) {
       return false;
     };
 
-    // Primary Expo Location Detector (Works on Android APK, iOS, & Web)
+    // ── STEP 1: Expo Location native SDK (works on native APK) ──────────────
+    let gotLocation = false;
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status === 'granted') {
         const loc = await Location.getCurrentPositionAsync({
           accuracy: Location.Accuracy.Balanced,
         });
-
         const { latitude, longitude } = loc.coords;
 
         try {
-          const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
-          if (addresses && addresses.length > 0) {
-            const item = addresses[0];
+          const expoAddrs = await Location.reverseGeocodeAsync({ latitude, longitude });
+          if (expoAddrs && expoAddrs.length > 0) {
+            const item = expoAddrs[0];
             const line1 = [item.name, item.streetNumber, item.street, item.subregion || item.district].filter(Boolean).join(', ') || 'Current GPS Location';
             const line2 = item.district || item.subregion || '';
             const city = item.city || item.subregion || item.region || '';
             const state = item.region || '';
             const pincode = item.postalCode ? item.postalCode.replace(/\D/g, '') : '';
             const landmark = item.street || item.name || '';
-
             applyLocationData(line1, line2, city, state, pincode, landmark, latitude, longitude);
             setDetectingLocation(false);
             return;
           }
         } catch (e) {}
 
+        // Expo gave coords but no address — use reverseGeocode APIs
         await reverseGeocode(latitude, longitude);
         setDetectingLocation(false);
         return;
       }
-    } catch (err) {
-      console.log('Expo location error:', err);
+    } catch (_) {}
+
+    // ── STEP 2: Browser/WebView navigator.geolocation ────────────────────────
+    if (!gotLocation && typeof navigator !== 'undefined' && navigator.geolocation) {
+      await new Promise<void>((resolve) => {
+        navigator.geolocation.getCurrentPosition(
+          async (position) => {
+            try {
+              const { latitude, longitude } = position.coords;
+              await reverseGeocode(latitude, longitude);
+              gotLocation = true;
+            } catch (_) {}
+            resolve();
+          },
+          () => resolve(),
+          { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }
+        );
+      });
+      if (gotLocation) {
+        setDetectingLocation(false);
+        return;
+      }
     }
 
-    // Fallback to Web Navigator or IP Geolocation
-    if (typeof navigator !== 'undefined' && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          try {
-            const { latitude, longitude } = position.coords;
-            await reverseGeocode(latitude, longitude);
-          } catch (err) {
-            await tryIpFallback();
-          } finally {
-            setDetectingLocation(false);
-          }
-        },
-        async () => {
-          await tryIpFallback();
-          setDetectingLocation(false);
-        },
-        { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
-      );
-    } else {
-      await tryIpFallback();
-      setDetectingLocation(false);
-    }
+    // ── STEP 3: IP-based location — ALWAYS works, no permission needed ────────
+    await tryIpFallback();
+    setDetectingLocation(false);
   };
 
   const fetchAddresses = async () => {

@@ -27,6 +27,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bf7f8db4-6a77-485b-b67c-e8b1728f6dfa"
+      }
+    },
+    "owner": "abhinandh2255"
   }
 }
