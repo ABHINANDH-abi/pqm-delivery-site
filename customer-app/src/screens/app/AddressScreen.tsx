@@ -265,8 +265,8 @@ export default function AddressScreen({ navigation }: Props) {
                   backgroundColor: '#1E293B',
                   paddingVertical: 12,
                   paddingHorizontal: 16,
-                  borderRadius: 10,
-                  borderWidth: 1,
+                  borderRadius: 12,
+                  borderWidth: 1.5,
                   borderColor: '#F59E0B',
                   marginBottom: 16,
                   flexDirection: 'row',
@@ -277,11 +277,35 @@ export default function AddressScreen({ navigation }: Props) {
                 {detectingLocation ? (
                   <ActivityIndicator color="#F59E0B" />
                 ) : (
-                  <Text style={{ color: '#F59E0B', fontSize: 14, fontWeight: '700', textAlign: 'center' }}>
-                    📍 Detect Current Location via GPS
+                  <Text style={{ color: '#F59E0B', fontSize: 14, fontWeight: '800', textAlign: 'center' }}>
+                    📍 Detect Current Hardware GPS Location
                   </Text>
                 )}
               </TouchableOpacity>
+
+              {/* Live GPS Coordinates Card */}
+              {formData.latitude && formData.longitude && (
+                <View
+                  style={{
+                    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                    borderColor: '#10B981',
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    padding: 12,
+                    marginBottom: 16,
+                  }}
+                >
+                  <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 12, textTransform: 'uppercase' }}>
+                    ✅ Hardware GPS Pin Captured
+                  </Text>
+                  <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 13, marginTop: 2 }}>
+                    GPS Coordinates: ({formData.latitude.toFixed(5)}, {formData.longitude.toFixed(5)})
+                  </Text>
+                  <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 2 }}>
+                    Admin dashboard & delivery rider will navigate to this exact GPS location pin.
+                  </Text>
+                </View>
+              )}
 
               <Text style={styles.inputLabel}>Label (e.g. Home, Work, Apartment)</Text>
               <TextInput
