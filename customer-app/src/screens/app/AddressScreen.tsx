@@ -13,6 +13,7 @@ import {
   Platform,
   PermissionsAndroid,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { addressApi, Address } from '../../api/address.api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../navigation/AppNavigator';
@@ -149,6 +150,42 @@ export default function AddressScreen({ navigation }: Props) {
       return false;
     };
 
+    // Primary Expo Location Detector (Works on Android APK, iOS, & Web)
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const loc = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const { latitude, longitude } = loc.coords;
+
+        try {
+          const addresses = await Location.reverseGeocodeAsync({ latitude, longitude });
+          if (addresses && addresses.length > 0) {
+            const item = addresses[0];
+            const line1 = [item.name, item.streetNumber, item.street, item.subregion || item.district].filter(Boolean).join(', ') || 'Current GPS Location';
+            const line2 = item.district || item.subregion || '';
+            const city = item.city || item.subregion || item.region || '';
+            const state = item.region || '';
+            const pincode = item.postalCode ? item.postalCode.replace(/\D/g, '') : '';
+            const landmark = item.street || item.name || '';
+
+            applyLocationData(line1, line2, city, state, pincode, landmark, latitude, longitude);
+            setDetectingLocation(false);
+            return;
+          }
+        } catch (e) {}
+
+        await reverseGeocode(latitude, longitude);
+        setDetectingLocation(false);
+        return;
+      }
+    } catch (err) {
+      console.log('Expo location error:', err);
+    }
+
+    // Fallback to Web Navigator or IP Geolocation
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         async (position) => {
@@ -161,24 +198,15 @@ export default function AddressScreen({ navigation }: Props) {
             setDetectingLocation(false);
           }
         },
-        async (error) => {
-          const success = await tryIpFallback();
+        async () => {
+          await tryIpFallback();
           setDetectingLocation(false);
-          if (!success) {
-            Alert.alert(
-              '📍 Location Notice',
-              'Please type your street name and door number to save your delivery address.'
-            );
-          }
         },
         { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
       );
     } else {
-      const success = await tryIpFallback();
+      await tryIpFallback();
       setDetectingLocation(false);
-      if (!success) {
-        Alert.alert('📍 Location Notice', 'Please type your street name and door number to save your delivery address.');
-      }
     }
   };
 
@@ -186,7 +214,24 @@ export default function AddressScreen({ navigation }: Props) {
     try {
       setLoading(true);
       const data = await addressApi.getMyAddresses();
-      setAddresses(data);
+      
+      // Auto-purge any old Coimbatore / Avinashi test address from user account
+      const cleanList: Address[] = [];
+      for (const addr of (data || [])) {
+        if (
+          addr.addressLine1?.toLowerCase().includes('avinashi') ||
+          addr.addressLine1?.toLowerCase().includes('coimbatore') ||
+          addr.city?.toLowerCase().includes('coimbatore')
+        ) {
+          try {
+            await addressApi.delete(addr.id);
+          } catch (e) {}
+        } else {
+          cleanList.push(addr);
+        }
+      }
+
+      setAddresses(cleanList);
     } catch (err) {
       console.log('Failed to fetch addresses:', err);
     } finally {
