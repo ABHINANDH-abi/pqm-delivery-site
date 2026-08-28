@@ -5,6 +5,7 @@ import { BadRequestError, ConflictError, UnauthorizedError, NotFoundError } from
 import { RegisterInput, LoginInput } from './auth.validation';
 import { UserRole } from '../../../../shared/src/constants/roles';
 import { UserPublic } from '../../../../shared/src/types/user.types';
+import { emailService } from '../../services/email.service';
 
 export interface AuthResult {
   user: UserPublic;
@@ -35,7 +36,7 @@ function formatUserResponse(user: {
 const otpStore: Record<string, { otp: string; expiresAt: number }> = {};
 
 export class AuthService {
-  static async sendOtp(email: string, name?: string, phone?: string): Promise<{ message: string; email: string; otpDebug: string }> {
+  static async sendOtp(email: string, name?: string, phone?: string): Promise<{ message: string; email: string }> {
     const cleanEmail = email.toLowerCase().trim();
     if (!cleanEmail.includes('@')) {
       throw new BadRequestError('Please provide a valid email address');
@@ -48,14 +49,16 @@ export class AuthService {
     };
 
     console.log(`\n======================================================`);
-    console.log(`✉️ GMAIL OTP VERIFICATION CODE FOR ${cleanEmail.toUpperCase()}:`);
+    console.log(`✉️ REAL GMAIL OTP VERIFICATION FOR ${cleanEmail.toUpperCase()}:`);
     console.log(`🔑 OTP CODE: [ ${otp} ]`);
     console.log(`======================================================\n`);
+
+    // Dispatch real email via Nodemailer SMTP
+    await emailService.sendOtpEmail(cleanEmail, otp, name);
 
     return {
       message: `6-Digit Verification OTP sent to ${cleanEmail}`,
       email: cleanEmail,
-      otpDebug: otp,
     };
   }
 

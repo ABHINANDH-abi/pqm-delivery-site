@@ -265,18 +265,10 @@ export default function RegisterScreen({ navigation }: any) {
               <Text style={{ fontSize: 20, fontWeight: '800', color: '#1A1A2E', textAlign: 'center' }}>
                 Verify Gmail Address
               </Text>
-              <Text style={{ fontSize: 13, color: '#666666', textAlign: 'center', marginTop: 4, marginBottom: 16 }}>
-                Enter the 6-digit OTP code sent to {'\n'}
+              <Text style={{ fontSize: 13, color: '#666666', textAlign: 'center', marginTop: 4, marginBottom: 20 }}>
+                We sent a 6-digit verification code to {'\n'}
                 <Text style={{ fontWeight: '800', color: '#FF5722' }}>{email}</Text>
               </Text>
-
-              {debugOtpHint ? (
-                <View style={{ backgroundColor: '#FFF3E0', padding: 10, borderRadius: 8, marginBottom: 16, borderLeftWidth: 4, borderLeftColor: '#FF5722' }}>
-                  <Text style={{ fontSize: 12, color: '#E65100', fontWeight: '700', textAlign: 'center' }}>
-                    DEV OTP CODE: {debugOtpHint}
-                  </Text>
-                </View>
-              ) : null}
 
               <Text style={{ fontSize: 12, fontWeight: '700', color: '#333333', marginBottom: 6 }}>
                 Enter 6-Digit OTP Code:

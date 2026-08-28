@@ -268,18 +268,10 @@ export default function LoginScreen() {
               <Text style={{ fontSize: 20, fontWeight: '800', color: '#FFFFFF', textAlign: 'center' }}>
                 ✉️ Verify Driver Gmail Address
               </Text>
-              <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginTop: 4, marginBottom: 16 }}>
-                Enter the 6-digit OTP code sent to {'\n'}
+              <Text style={{ fontSize: 12, color: '#94A3B8', textAlign: 'center', marginTop: 4, marginBottom: 20 }}>
+                We sent a 6-digit verification code to {'\n'}
                 <Text style={{ fontWeight: '800', color: '#F59E0B' }}>{driverEmail}</Text>
               </Text>
-
-              {debugOtpHint ? (
-                <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', borderWidth: 1, borderColor: '#F59E0B', padding: 8, borderRadius: 8, marginBottom: 16 }}>
-                  <Text style={{ fontSize: 12, color: '#F59E0B', fontWeight: '800', textAlign: 'center' }}>
-                    DEV OTP CODE: {debugOtpHint}
-                  </Text>
-                </View>
-              ) : null}
 
               <TextInput
                 style={{
