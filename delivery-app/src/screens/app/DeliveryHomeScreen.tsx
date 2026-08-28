@@ -57,7 +57,11 @@ export default function DeliveryHomeScreen() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [alertPopupOrder, setAlertPopupOrder] = useState<DeliveryOrder | null>(null);
-  const [notificationPermission, setNotificationPermission] = useState<string>(pushNotification.getPermissionState());
+  const [notificationPermission, setNotificationPermission] = useState<string>('default');
+
+  useEffect(() => {
+    pushNotification.getPermissionState().then((state) => setNotificationPermission(state));
+  }, []);
 
   const prevAvailableCountRef = useRef<number>(-1);
   const notifiedIdsRef = useRef<Set<string>>(new Set());
@@ -272,7 +276,8 @@ export default function DeliveryHomeScreen() {
         <TouchableOpacity
           onPress={async () => {
             const granted = await pushNotification.requestPermission();
-            setNotificationPermission(pushNotification.getPermissionState());
+            const state = await pushNotification.getPermissionState();
+            setNotificationPermission(state);
             if (granted) {
               Alert.alert('Notifications Enabled 🎉', 'You will now receive system status bar alert banners on your phone when new orders are accepted!');
             }
