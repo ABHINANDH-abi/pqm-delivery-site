@@ -70,7 +70,7 @@ export const pushNotification = {
       Vibration.vibrate([0, 1000, 400, 1000, 400, 1500]);
     } catch (e) {}
 
-    // 2. Android / iOS Native System Notification with Audio Chime (Google Pay Style)
+    // 2. Android / iOS Native System Notification with Audio Chime & Banner (Google Pay Style)
     if (Platform.OS !== 'web') {
       try {
         await Notifications.scheduleNotificationAsync({
@@ -78,9 +78,11 @@ export const pushNotification = {
             title,
             body: bodyText,
             sound: 'default', // Google Pay / System Chime sound
+            priority: Notifications.AndroidNotificationPriority.MAX, // Force MAX priority status bar banner
+            channelId: 'order_alerts', // Direct to MAX importance channel with banner & audio
             vibrate: [0, 500, 250, 500, 250, 1000],
             data: { tag: tag || `dispatch-${Date.now()}` },
-          },
+          } as any,
           trigger: null, // Deliver immediately
         });
       } catch (err) {
