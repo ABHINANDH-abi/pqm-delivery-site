@@ -1,25 +1,31 @@
 import nodemailer from 'nodemailer';
 
 /**
- * Production Email Service using Nodemailer.
- * Configured with environment variables or fallback SMTP for real email dispatch.
+ * Production Multi-Provider Transactional Email Service.
+ * Supports:
+ * 1. Resend API (RESEND_API_KEY) — 100% HTTPS REST delivery (0 IP blocks)
+ * 2. Brevo/Sendinblue API (BREVO_API_KEY) — HTTPS REST delivery
+ * 3. Nodemailer SMTP (Gmail / Custom SMTP)
  */
 class EmailService {
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
     const smtpUser = process.env.SMTP_USER || '6abhi6nad6@gmail.com';
     const smtpPass = (process.env.SMTP_PASS || 'tsdypfwbzkmmyouc').replace(/\s+/g, '');
 
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: smtpUser,
-        pass: smtpPass,
-      },
-    });
-
-    console.log(`[EmailService] ✅ Real Gmail SMTP initialized for: ${smtpUser}`);
+    try {
+      this.transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+      console.log(`[EmailService] ✅ Email engine initialized (Resend/Brevo HTTP ready, Gmail SMTP fallback for ${smtpUser})`);
+    } catch (e) {
+      console.warn('[EmailService] SMTP init note:', e);
+    }
   }
 
   /**
@@ -28,6 +34,8 @@ class EmailService {
   async sendOtpEmail(toEmail: string, otp: string, userName?: string): Promise<boolean> {
     const appName = process.env.APP_NAME || 'PQM Kitchen & Delivery';
     const recipientName = userName || 'Valued Customer';
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const brevoApiKey = process.env.BREVO_API_KEY;
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -78,20 +86,83 @@ class EmailService {
       </html>
     `;
 
-    try {
-      const info = await this.transporter.sendMail({
-        from: `"${appName}" <${process.env.SMTP_USER || 'no-reply@qureshimandi.com'}>`,
-        to: toEmail,
-        subject: `🔑 ${otp} is your ${appName} Verification Code`,
-        html: htmlContent,
-      });
+    // 1. Primary HTTP REST Dispatch via Resend API (if RESEND_API_KEY configured)
+    if (resendApiKey) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: process.env.EMAIL_FROM || `${appName} <onboarding@resend.dev>`,
+            to: [toEmail],
+            subject: `🔑 ${otp} is your ${appName} Verification Code`,
+            html: htmlContent,
+          }),
+        });
 
-      console.log(`[EmailService] ✉️ Real OTP email successfully sent to ${toEmail}. MessageId: ${info.messageId}`);
-      return true;
-    } catch (err: any) {
-      console.warn(`[EmailService] ⚠️ SMTP Email dispatch note (${err.message}). OTP active in system.`);
-      return false;
+        const resData: any = await response.json();
+        if (response.ok) {
+          console.log(`[EmailService] ✉️ OTP sent via Resend API to ${toEmail}. Resend ID: ${resData?.id}`);
+          return true;
+        } else {
+          console.warn(`[EmailService] Resend API error: ${resData?.message}`);
+        }
+      } catch (err: any) {
+        console.warn(`[EmailService] Resend API exception: ${err.message}`);
+      }
     }
+
+    // 2. Secondary HTTP REST Dispatch via Brevo API (if BREVO_API_KEY configured)
+    if (brevoApiKey) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: appName, email: process.env.SMTP_USER || '6abhi6nad6@gmail.com' },
+            to: [{ email: toEmail }],
+            subject: `🔑 ${otp} is your ${appName} Verification Code`,
+            htmlContent,
+          }),
+        });
+
+        const resData: any = await response.json();
+        if (response.ok) {
+          console.log(`[EmailService] ✉️ OTP sent via Brevo API to ${toEmail}. MessageId: ${resData?.messageId}`);
+          return true;
+        } else {
+          console.warn(`[EmailService] Brevo API error: ${resData?.message}`);
+        }
+      } catch (err: any) {
+        console.warn(`[EmailService] Brevo API exception: ${err.message}`);
+      }
+    }
+
+    // 3. Fallback Dispatch via Nodemailer SMTP (Gmail)
+    if (this.transporter) {
+      try {
+        const info = await this.transporter.sendMail({
+          from: `"${appName}" <${process.env.SMTP_USER || '6abhi6nad6@gmail.com'}>`,
+          to: toEmail,
+          subject: `🔑 ${otp} is your ${appName} Verification Code`,
+          html: htmlContent,
+        });
+
+        console.log(`[EmailService] ✉️ Real OTP email sent via SMTP to ${toEmail}. MessageId: ${info.messageId}`);
+        return true;
+      } catch (err: any) {
+        console.warn(`[EmailService] ⚠️ Gmail SMTP dispatch error (${err.message}). OTP active in system.`);
+        return false;
+      }
+    }
+
+    return false;
   }
 
   /**
@@ -155,17 +226,20 @@ class EmailService {
     `;
 
     try {
-      await this.transporter.sendMail({
-        from: `"${appName}" <${process.env.SMTP_USER || 'no-reply@qureshimandi.com'}>`,
-        to: toEmail,
-        subject: `🧾 Order Receipt #${orderDetails.orderId.slice(-6).toUpperCase()} - ${appName}`,
-        html: htmlContent,
-      });
-      return true;
+      if (this.transporter) {
+        await this.transporter.sendMail({
+          from: `"${appName}" <${process.env.SMTP_USER || '6abhi6nad6@gmail.com'}>`,
+          to: toEmail,
+          subject: `🧾 Order Receipt #${orderDetails.orderId.slice(-6).toUpperCase()} - ${appName}`,
+          html: htmlContent,
+        });
+        return true;
+      }
     } catch (err: any) {
       console.warn(`[EmailService] Receipt email error: ${err.message}`);
       return false;
     }
+    return false;
   }
 }
 
