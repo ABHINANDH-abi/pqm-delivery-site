@@ -12,17 +12,30 @@ class EmailService {
 
   constructor() {
     const smtpUser = process.env.SMTP_USER || '6abhi6nad6@gmail.com';
-    const smtpPass = (process.env.SMTP_PASS || 'tsdypfwbzkmmyouc').replace(/\s+/g, '');
+    const smtpPass = (process.env.BREVO_API_KEY || process.env.SMTP_PASS || '').replace(/\s+/g, '');
 
     try {
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: smtpUser,
-          pass: smtpPass,
-        },
-      });
-      console.log(`[EmailService] ✅ Email engine initialized (Resend/Brevo HTTP ready, Gmail SMTP fallback for ${smtpUser})`);
+      if (smtpPass.startsWith('xsmtpsib-')) {
+        this.transporter = nodemailer.createTransport({
+          host: 'smtp-relay.brevo.com',
+          port: 587,
+          secure: false,
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+        console.log(`[EmailService] ✅ Brevo Dedicated SMTP Relay initialized for: ${smtpUser}`);
+      } else if (smtpPass) {
+        this.transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: {
+            user: smtpUser,
+            pass: smtpPass,
+          },
+        });
+        console.log(`[EmailService] ✅ Gmail SMTP initialized for: ${smtpUser}`);
+      }
     } catch (e) {
       console.warn('[EmailService] SMTP init note:', e);
     }
