@@ -1,9 +1,6 @@
 {
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/admin/(.*)", "dest": "/admin-dashboard/index.html" },
-    { "src": "/admin", "dest": "/admin-dashboard/index.html" },
-    { "src": "/app/(.*)", "dest": "/customer-portal/index.html" },
-    { "src": "/app", "dest": "/customer-portal/index.html" }
+  "rewrites": [
+    { "source": "/admin/(.+)", "destination": "/admin.html" },
+    { "source": "/app/(.+)", "destination": "/app-client.html" }
   ]
 }
