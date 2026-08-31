@@ -1,6 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/admin/((?!assets/|favicon.svg).*)", "destination": "/admin/index.html" },
-    { "source": "/app/((?!_expo/|assets/|favicon.ico).*)", "destination": "/app/index.html" }
-  ]
+  "cleanUrls": false,
+  "trailingSlash": false
 }
