@@ -1,8 +1,6 @@
 {
   "routes": [
-    { "src": "/admin/assets/(.*)", "dest": "/admin/assets/$1", "status": 200 },
-    { "src": "/admin(.*)", "dest": "/admin/index.html", "status": 200 },
-    { "src": "/app/assets/(.*)", "dest": "/app/assets/$1", "status": 200 },
-    { "src": "/app(.*)", "dest": "/app/index.html", "status": 200 }
+    { "src": "/admin((?!\\.[a-z0-9]+$).*)", "dest": "/admin/index.html", "status": 200 },
+    { "src": "/app((?!\\.[a-z0-9]+$).*)", "dest": "/app/index.html", "status": 200 }
   ]
 }
