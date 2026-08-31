@@ -1,8 +1,6 @@
 {
   "routes": [
-    { "src": "/admin-dashboard/assets/(.*)", "dest": "/admin-dashboard/assets/$1" },
-    { "src": "/admin-dashboard/favicon.svg", "dest": "/admin-dashboard/favicon.svg" },
-    { "src": "/admin-dashboard/icons.svg", "dest": "/admin-dashboard/icons.svg" },
+    { "handle": "filesystem" },
     { "src": "/admin/(.*)", "dest": "/admin-dashboard/index.html" },
     { "src": "/admin", "dest": "/admin-dashboard/index.html" },
     { "src": "/app/(.*)", "dest": "/customer-portal/index.html" },
