@@ -1,9 +1,14 @@
 {
-  "cleanUrls": false,
+  "cleanUrls": true,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin-app.html" },
-    { "source": "/admin/(.*)", "destination": "/admin-app.html" },
-    { "source": "/app", "destination": "/app-client.html" },
-    { "source": "/app/(.*)", "destination": "/app-client.html" }
+    { "source": "/admin", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin/dashboard", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin/login", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin/orders", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin/products", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin/categories", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin/delivery-partners", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin/settings", "destination": "/admin-dashboard/index.html" },
+    { "source": "/app", "destination": "/app-client.html" }
   ]
 }
