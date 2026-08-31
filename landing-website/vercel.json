@@ -1,8 +1,16 @@
 {
-  "rewrites": [
-    { "source": "/admin/:path*", "destination": "/admin-console.html" },
-    { "source": "/admin", "destination": "/admin-console.html" },
-    { "source": "/app/:path*", "destination": "/app-console.html" },
-    { "source": "/app", "destination": "/app-console.html" }
+  "version": 2,
+  "routes": [
+    {
+      "src": "/admin(.*)",
+      "dest": "/admin/index.html"
+    },
+    {
+      "src": "/app(.*)",
+      "dest": "/app/index.html"
+    },
+    {
+      "handle": "filesystem"
+    }
   ]
 }
