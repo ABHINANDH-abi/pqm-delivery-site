@@ -1,10 +1,9 @@
 {
   "cleanUrls": false,
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/admin/(.*)", "dest": "/admin/portal.html" },
-    { "src": "/admin", "dest": "/admin/portal.html" },
-    { "src": "/app/(.*)", "dest": "/app/portal.html" },
-    { "src": "/app", "dest": "/app/portal.html" }
+  "rewrites": [
+    { "source": "/admin/(.*)", "destination": "/admin/" },
+    { "source": "/admin", "destination": "/admin/" },
+    { "source": "/app/(.*)", "destination": "/app/" },
+    { "source": "/app", "destination": "/app/" }
   ]
 }
