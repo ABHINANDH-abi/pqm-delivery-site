@@ -1,14 +1,13 @@
 {
-  "cleanUrls": true,
+  "trailingSlash": true,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin-dashboard/index.html" },
-    { "source": "/admin/dashboard", "destination": "/admin-dashboard/index.html" },
-    { "source": "/admin/login", "destination": "/admin-dashboard/index.html" },
-    { "source": "/admin/orders", "destination": "/admin-dashboard/index.html" },
-    { "source": "/admin/products", "destination": "/admin-dashboard/index.html" },
-    { "source": "/admin/categories", "destination": "/admin-dashboard/index.html" },
-    { "source": "/admin/delivery-partners", "destination": "/admin-dashboard/index.html" },
-    { "source": "/admin/settings", "destination": "/admin-dashboard/index.html" },
-    { "source": "/app", "destination": "/app-client.html" }
+    { "source": "/admin/dashboard", "destination": "/admin-dashboard/" },
+    { "source": "/admin/login", "destination": "/admin-dashboard/" },
+    { "source": "/admin/orders", "destination": "/admin-dashboard/" },
+    { "source": "/admin/products", "destination": "/admin-dashboard/" },
+    { "source": "/admin/categories", "destination": "/admin-dashboard/" },
+    { "source": "/admin/delivery-partners", "destination": "/admin-dashboard/" },
+    { "source": "/admin/settings", "destination": "/admin-dashboard/" },
+    { "source": "/admin", "destination": "/admin-dashboard/" }
   ]
 }
