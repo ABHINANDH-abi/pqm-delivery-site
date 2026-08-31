@@ -1,10 +1,9 @@
 {
-  "outputDirectory": "dist",
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/admin/(.*)", "destination": "/admin.html" },
-    { "source": "/app", "destination": "/app.html" },
-    { "source": "/app/(.*)", "destination": "/app.html" }
+    { "source": "/admin", "destination": "/admin.html?v=1" },
+    { "source": "/admin/(.*)", "destination": "/admin.html?v=1" },
+    { "source": "/app", "destination": "/app.html?v=1" },
+    { "source": "/app/(.*)", "destination": "/app.html?v=1" }
   ]
 }
