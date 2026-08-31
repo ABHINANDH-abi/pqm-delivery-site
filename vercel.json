@@ -1,6 +1,11 @@
 {
+  "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin(.*)", "destination": "/admin/index.html" },
-    { "source": "/app(.*)", "destination": "/app/index.html" }
+    { "source": "/admin/(.*)\\.(js|css|svg|png|jpg|ico|json)", "destination": "/admin/$1.$2" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
+    { "source": "/app/(.*)\\.(js|css|svg|png|jpg|ico|json)", "destination": "/app/$1.$2" },
+    { "source": "/app", "destination": "/app/index.html" },
+    { "source": "/app/(.*)", "destination": "/app/index.html" }
   ]
 }
