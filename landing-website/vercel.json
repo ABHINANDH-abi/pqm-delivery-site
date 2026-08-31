@@ -1,9 +1,9 @@
 {
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin$", "destination": "/admin/index.html" },
-    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
-    { "source": "/app$", "destination": "/app/index.html" },
-    { "source": "/app/(.*)", "destination": "/app/index.html" }
+    { "source": "/admin", "destination": "/console/index.html" },
+    { "source": "/admin/(.*)", "destination": "/console/index.html" },
+    { "source": "/app", "destination": "/app-portal/index.html" },
+    { "source": "/app/(.*)", "destination": "/app-portal/index.html" }
   ]
 }
