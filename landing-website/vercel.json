@@ -1,12 +1,7 @@
 {
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin/assets/:path*", "destination": "/admin/assets/:path*" },
-    { "source": "/admin", "destination": "/admin/index.html" },
-    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
-    { "source": "/app/assets/:path*", "destination": "/app/assets/:path*" },
-    { "source": "/app/_expo/:path*", "destination": "/app/_expo/:path*" },
-    { "source": "/app", "destination": "/app/index.html" },
-    { "source": "/app/(.*)", "destination": "/app/index.html" }
+    { "source": "/admin(.*)", "destination": "/admin-console.html" },
+    { "source": "/app(.*)", "destination": "/app-console.html" }
   ]
 }
