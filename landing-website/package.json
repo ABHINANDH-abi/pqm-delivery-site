@@ -1,8 +1,0 @@
-{
-  "name": "qureshi-mandi-landing",
-  "version": "1.0.0",
-  "description": "Static Download Landing Site for Qureshi Mandi Coimbatore",
-  "scripts": {
-    "build": "echo Static site ready"
-  }
-}
