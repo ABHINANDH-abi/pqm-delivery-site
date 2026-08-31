@@ -1,10 +1,9 @@
 {
   "version": 2,
-  "cleanUrls": true,
   "rewrites": [
-    { "source": "/admin/(.*)", "destination": "/admin.html" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/app/(.*)", "destination": "/app.html" },
-    { "source": "/app", "destination": "/app.html" }
+    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
+    { "source": "/admin", "destination": "/admin/index.html" },
+    { "source": "/app/(.*)", "destination": "/app/index.html" },
+    { "source": "/app", "destination": "/app/index.html" }
   ]
 }
