@@ -1,9 +1,12 @@
 {
-  "cleanUrls": true,
+  "outputDirectory": ".",
+  "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin-console" },
-    { "source": "/admin/(.*)", "destination": "/admin-console" },
-    { "source": "/app", "destination": "/app-console" },
-    { "source": "/app/(.*)", "destination": "/app-console" }
+    { "source": "/admin-console", "destination": "/admin-console.html" },
+    { "source": "/admin", "destination": "/admin-console.html" },
+    { "source": "/admin/(.*)", "destination": "/admin-console.html" },
+    { "source": "/app-console", "destination": "/app-console.html" },
+    { "source": "/app", "destination": "/app-console.html" },
+    { "source": "/app/(.*)", "destination": "/app-console.html" }
   ]
 }
