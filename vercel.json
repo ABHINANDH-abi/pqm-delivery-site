@@ -1,13 +1,10 @@
 {
   "routes": [
-    { "src": "/landing-website/admin/assets/(.*)", "dest": "/landing-website/admin/assets/$1" },
-    { "src": "/landing-website/admin/(.*)", "dest": "/landing-website/admin/index.html" },
-    { "src": "/landing-website/admin", "dest": "/landing-website/admin/index.html" },
-    { "src": "/admin/assets/(.*)", "dest": "/landing-website/admin/assets/$1" },
-    { "src": "/admin/(.*)", "dest": "/landing-website/admin/index.html" },
-    { "src": "/admin", "dest": "/landing-website/admin/index.html" },
-    { "src": "/app/assets/(.*)", "dest": "/landing-website/app/assets/$1" },
-    { "src": "/app/(.*)", "dest": "/landing-website/app/index.html" },
-    { "src": "/app", "dest": "/landing-website/app/index.html" }
+    { "src": "/admin/assets/(.*)", "dest": "/landing-website/admin/assets/$1", "status": 200 },
+    { "src": "/admin/(.*)", "dest": "/landing-website/admin/index.html", "status": 200 },
+    { "src": "/admin", "dest": "/landing-website/admin/index.html", "status": 200 },
+    { "src": "/app/assets/(.*)", "dest": "/landing-website/app/assets/$1", "status": 200 },
+    { "src": "/app/(.*)", "dest": "/landing-website/app/index.html", "status": 200 },
+    { "src": "/app", "dest": "/landing-website/app/index.html", "status": 200 }
   ]
 }
