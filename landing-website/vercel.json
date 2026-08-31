@@ -1,13 +1,10 @@
 {
-  "cleanUrls": false,
-  "rewrites": [
-    { "source": "/landing-website/admin-portal", "destination": "/landing-website/admin-portal.html" },
-    { "source": "/landing-website/app-portal", "destination": "/landing-website/app-portal.html" },
-    { "source": "/admin-portal", "destination": "/landing-website/admin-portal.html" },
-    { "source": "/admin", "destination": "/landing-website/admin-portal.html" },
-    { "source": "/admin/(.*)", "destination": "/landing-website/admin-portal.html" },
-    { "source": "/app-portal", "destination": "/landing-website/app-portal.html" },
-    { "source": "/app", "destination": "/landing-website/app-portal.html" },
-    { "source": "/app/(.*)", "destination": "/landing-website/app-portal.html" }
+  "routes": [
+    { "src": "/admin/assets/(.*)", "dest": "/admin/assets/$1" },
+    { "src": "/admin/(.*)", "dest": "/admin/index.html" },
+    { "src": "/admin", "dest": "/admin/index.html" },
+    { "src": "/app/assets/(.*)", "dest": "/app/assets/$1" },
+    { "src": "/app/(.*)", "dest": "/app/index.html" },
+    { "src": "/app", "dest": "/app/index.html" }
   ]
 }
