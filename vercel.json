@@ -1,9 +1,8 @@
 {
-  "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin/(.*)", "destination": "/admin-portal-dashboard.html" },
-    { "source": "/admin", "destination": "/admin-portal-dashboard.html" },
-    { "source": "/app/(.*)", "destination": "/app-portal-client.html" },
-    { "source": "/app", "destination": "/app-portal-client.html" }
+    { "source": "/admin/(.*)", "destination": "/admin-dashboard/index.html" },
+    { "source": "/admin$", "destination": "/admin-dashboard/index.html" },
+    { "source": "/app/(.*)", "destination": "/customer-portal/index.html" },
+    { "source": "/app$", "destination": "/customer-portal/index.html" }
   ]
 }
