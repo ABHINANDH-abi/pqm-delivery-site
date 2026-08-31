@@ -1,8 +1,8 @@
 {
   "routes": [
-    { "src": "/landing-website/admin(.*)", "dest": "/landing-website/admin/index.html", "status": 200 },
-    { "src": "/admin(.*)", "dest": "/landing-website/admin/index.html", "status": 200 },
-    { "src": "/landing-website/app(.*)", "dest": "/landing-website/app/index.html", "status": 200 },
-    { "src": "/app(.*)", "dest": "/landing-website/app/index.html", "status": 200 }
+    { "src": "/admin/assets/(.*)", "dest": "/admin/assets/$1", "status": 200 },
+    { "src": "/admin(.*)", "dest": "/admin/index.html", "status": 200 },
+    { "src": "/app/assets/(.*)", "dest": "/app/assets/$1", "status": 200 },
+    { "src": "/app(.*)", "dest": "/app/index.html", "status": 200 }
   ]
 }
