@@ -1,7 +1,6 @@
 {
-  "trailingSlash": true,
   "rewrites": [
-    { "source": "/admin/(.*)", "destination": "/admin/index.html" },
-    { "source": "/app/(.*)", "destination": "/app/index.html" }
+    { "source": "/admin/((?!assets/|favicon.svg).*)", "destination": "/admin/index.html" },
+    { "source": "/app/((?!_expo/|assets/|favicon.ico).*)", "destination": "/app/index.html" }
   ]
 }
