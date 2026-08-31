@@ -1,8 +1,8 @@
 {
   "name": "qureshi-mandi-landing",
   "version": "1.0.0",
-  "description": "PQM Kitchen Landing & Admin Site",
+  "private": true,
   "scripts": {
-    "build": "echo Static site ready"
+    "build": "node build.js"
   }
 }
