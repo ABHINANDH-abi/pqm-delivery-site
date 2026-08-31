@@ -1,1 +1,9 @@
-{}
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/admin", "destination": "/landing-website/admin/index.html" },
+    { "source": "/admin/(.*)", "destination": "/landing-website/admin/index.html" },
+    { "source": "/app", "destination": "/landing-website/app/index.html" },
+    { "source": "/app/(.*)", "destination": "/landing-website/app/index.html" }
+  ]
+}
