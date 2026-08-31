@@ -1,10 +1,11 @@
 {
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin/(.*)\\.(js|css|svg|png|jpg|ico|json)", "destination": "/admin/$1.$2" },
+    { "source": "/admin/assets/:path*", "destination": "/admin/assets/:path*" },
     { "source": "/admin", "destination": "/admin/index.html" },
     { "source": "/admin/(.*)", "destination": "/admin/index.html" },
-    { "source": "/app/(.*)\\.(js|css|svg|png|jpg|ico|json)", "destination": "/app/$1.$2" },
+    { "source": "/app/assets/:path*", "destination": "/app/assets/:path*" },
+    { "source": "/app/_expo/:path*", "destination": "/app/_expo/:path*" },
     { "source": "/app", "destination": "/app/index.html" },
     { "source": "/app/(.*)", "destination": "/app/index.html" }
   ]
