@@ -1,9 +1,11 @@
 {
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/admin", "destination": "/admin_index.html?v=1" },
-    { "source": "/admin/(.*)", "destination": "/admin_index.html?v=1" },
-    { "source": "/app", "destination": "/app_index.html?v=1" },
-    { "source": "/app/(.*)", "destination": "/app_index.html?v=1" }
+    { "source": "/admin_index", "destination": "/admin_index.html" },
+    { "source": "/app_index", "destination": "/app_index.html" },
+    { "source": "/admin", "destination": "/admin_index" },
+    { "source": "/admin/(.*)", "destination": "/admin_index" },
+    { "source": "/app", "destination": "/app_index" },
+    { "source": "/app/(.*)", "destination": "/app_index" }
   ]
 }
