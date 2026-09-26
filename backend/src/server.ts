@@ -22,6 +22,9 @@ import notificationRoutes from './modules/notifications/notifications.routes';
 
 const app = express();
 
+// Trust reverse proxies (Vercel, Render, localtunnel, Cloudflare)
+app.set('trust proxy', true);
+
 // ─── Security middleware ──────────────────────────────────────────────────────
 
 // Set standard security HTTP headers
@@ -30,13 +33,8 @@ app.use(helmet());
 // CORS — allow mobile apps (no origin) and configured web origins
 app.use(
   cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps or curl)
-      if (!origin) return callback(null, true);
-      if (env.cors.origins.includes(origin) || origin.startsWith('http://localhost') || origin.startsWith('http://192.168.')) {
-        return callback(null, true);
-      }
-      return callback(null, true); // Permissive
+    origin: (_origin, callback) => {
+      return callback(null, true); // Fully permissive for mobile apps & web dashboards
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -44,12 +42,22 @@ app.use(
   }),
 );
 
-// Global rate limiter — permissive 10,000 requests per 15 minutes per IP
+// Global rate limiter — skip rate limiting for localhost / dev
 const globalRateLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10000,
+  max: 100000,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: (req) => {
+    const ip = req.ip || req.socket.remoteAddress || '';
+    return (
+      ip === '127.0.0.1' ||
+      ip === '::1' ||
+      ip.includes('127.0.0.1') ||
+      req.hostname === 'localhost' ||
+      req.hostname === '127.0.0.1'
+    );
+  },
   message: {
     success: false,
     error: {
