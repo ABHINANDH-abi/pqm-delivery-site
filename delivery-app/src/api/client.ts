@@ -8,6 +8,7 @@ const getBaseUrl = () => {
   if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
     return 'http://localhost:4000/api/v1';
   }
+  // Fallback production URL for physical APK devices
   return 'https://qureshi-mandi-backend.onrender.com/api/v1';
 };
 
@@ -18,7 +19,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 60000, // 60 seconds — allows sleeping Render container to wake up on physical APKs
 });
 
 // Automatic auth token header interceptor
