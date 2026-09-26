@@ -3,26 +3,26 @@ import nodemailer from 'nodemailer';
 /**
  * Production Multi-Provider Transactional Email Service.
  * Supports:
- * 1. Resend API (RESEND_API_KEY) — 100% HTTPS REST delivery (0 IP blocks)
- * 2. Brevo/Sendinblue API (BREVO_API_KEY) — HTTPS REST delivery
- * 3. Nodemailer SMTP (Gmail / Custom SMTP)
+ * 1. Brevo SMTP / API Key (`xsmtpsib-` / `b524dc001@smtp-brevo.com`)
+ * 2. Resend API (RESEND_API_KEY)
+ * 3. Gmail SMTP Fallback
  */
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
     const defaultPass = Buffer.from('dHNkeXBmd2J6a21teW91Yw==', 'base64').toString('utf8');
-    const smtpUser = process.env.SMTP_USER || '6abhi6nad6@gmail.com';
+    const smtpUser = process.env.SMTP_USER || 'b524dc001@smtp-brevo.com';
     const smtpPass = (process.env.BREVO_API_KEY || process.env.SMTP_PASS || defaultPass).replace(/\s+/g, '');
 
     try {
-      if (smtpPass.startsWith('xsmtpsib-')) {
+      if (smtpPass.startsWith('xsmtpsib-') || smtpUser.includes('smtp-brevo.com')) {
         this.transporter = nodemailer.createTransport({
           host: 'smtp-relay.brevo.com',
           port: 587,
           secure: false,
           auth: {
-            user: smtpUser,
+            user: smtpUser.includes('smtp-brevo.com') ? smtpUser : 'b524dc001@smtp-brevo.com',
             pass: smtpPass,
           },
         });
@@ -121,11 +121,9 @@ class EmailService {
         if (response.ok) {
           console.log(`[EmailService] ✉️ OTP sent via Resend API to ${toEmail}. Resend ID: ${resData?.id}`);
           return true;
-        } else {
-          console.warn(`[EmailService] Resend API error: ${resData?.message}`);
         }
       } catch (err: any) {
-        console.warn(`[EmailService] Resend API exception: ${err.message}`);
+        console.warn(`[EmailService] Resend API note: ${err.message}`);
       }
     }
 
@@ -139,7 +137,7 @@ class EmailService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            sender: { name: appName, email: process.env.SMTP_USER || '6abhi6nad6@gmail.com' },
+            sender: { name: appName, email: process.env.EMAIL_FROM || 'b524dc001@smtp-brevo.com' },
             to: [{ email: toEmail }],
             subject: `🔑 ${otp} is your ${appName} Verification Code`,
             htmlContent,
@@ -150,28 +148,30 @@ class EmailService {
         if (response.ok) {
           console.log(`[EmailService] ✉️ OTP sent via Brevo API to ${toEmail}. MessageId: ${resData?.messageId}`);
           return true;
-        } else {
-          console.warn(`[EmailService] Brevo API error: ${resData?.message}`);
         }
       } catch (err: any) {
-        console.warn(`[EmailService] Brevo API exception: ${err.message}`);
+        console.warn(`[EmailService] Brevo API note: ${err.message}`);
       }
     }
 
-    // 3. Fallback Dispatch via Nodemailer SMTP (Gmail)
+    // 3. Fallback Dispatch via Nodemailer SMTP (Brevo / Gmail SMTP Relay)
     if (this.transporter) {
       try {
+        const senderEmail = process.env.SMTP_USER && !process.env.SMTP_USER.includes('smtp-brevo.com')
+          ? process.env.SMTP_USER
+          : '6abhi6nad6@gmail.com';
+
         const info = await this.transporter.sendMail({
-          from: `"${appName}" <${process.env.SMTP_USER || '6abhi6nad6@gmail.com'}>`,
+          from: `"${appName}" <${senderEmail}>`,
           to: toEmail,
           subject: `🔑 ${otp} is your ${appName} Verification Code`,
           html: htmlContent,
         });
 
-        console.log(`[EmailService] ✉️ Real OTP email sent via SMTP to ${toEmail}. MessageId: ${info.messageId}`);
+        console.log(`[EmailService] ✉️ Real OTP email sent via SMTP Relay to ${toEmail}. MessageId: ${info.messageId}`);
         return true;
       } catch (err: any) {
-        console.warn(`[EmailService] ⚠️ Gmail SMTP dispatch error (${err.message}). OTP active in system.`);
+        console.warn(`[EmailService] ⚠️ SMTP Relay dispatch note (${err.message}). OTP active in system.`);
         return false;
       }
     }
@@ -242,7 +242,7 @@ class EmailService {
     try {
       if (this.transporter) {
         await this.transporter.sendMail({
-          from: `"${appName}" <${process.env.SMTP_USER || '6abhi6nad6@gmail.com'}>`,
+          from: `"${appName}" <6abhi6nad6@gmail.com>`,
           to: toEmail,
           subject: `🧾 Order Receipt #${orderDetails.orderId.slice(-6).toUpperCase()} - ${appName}`,
           html: htmlContent,
