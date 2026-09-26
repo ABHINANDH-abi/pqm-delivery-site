@@ -3,6 +3,8 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import https from 'https';
+import http from 'http';
 import { env } from './config/env';
 import { errorHandler } from './middleware/errorHandler';
 
@@ -34,7 +36,7 @@ app.use(
       if (env.cors.origins.includes(origin) || origin.startsWith('http://localhost') || origin.startsWith('http://192.168.')) {
         return callback(null, true);
       }
-      return callback(null, true); // Permissive in dev
+      return callback(null, true); // Permissive
     },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
@@ -128,6 +130,25 @@ app.use((_req, res) => {
 
 app.use(errorHandler);
 
+// ─── Keep-Alive Self Ping (Prevents Render Free Tier Hibernation) ─────────────
+
+const RENDER_EXTERNAL_URL = process.env['RENDER_EXTERNAL_URL'] || 'https://qureshi-mandi-backend.onrender.com';
+
+function startKeepAliveHeartbeat() {
+  const TEN_MINUTES = 10 * 60 * 1000;
+  setInterval(() => {
+    const healthUrl = `${RENDER_EXTERNAL_URL}/health`;
+    const protocol = healthUrl.startsWith('https') ? https : http;
+    protocol
+      .get(healthUrl, (res) => {
+        console.log(`[KeepAlive] Heartbeat ping to ${healthUrl} status: ${res.statusCode}`);
+      })
+      .on('error', (err) => {
+        console.warn(`[KeepAlive] Heartbeat ping error: ${err.message}`);
+      });
+  }, TEN_MINUTES);
+}
+
 // ─── Start server ─────────────────────────────────────────────────────────────
 
 const server = app.listen(env.port, '0.0.0.0', () => {
@@ -135,6 +156,8 @@ const server = app.listen(env.port, '0.0.0.0', () => {
   console.log(`📡 Listening on http://0.0.0.0:${env.port} (all network interfaces)`);
   console.log(`🔍 Health check: http://localhost:${env.port}/health`);
   console.log(`📦 API base: http://localhost:${env.port}/api/v1\n`);
+
+  startKeepAliveHeartbeat();
 });
 
 // Graceful shutdown
