@@ -18,10 +18,7 @@ const getBaseUrl = () => {
   if (import.meta.env['VITE_API_BASE_URL']) {
     return import.meta.env['VITE_API_BASE_URL'];
   }
-  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
-    return 'http://localhost:4000/api/v1';
-  }
-  return 'https://qureshi-mandi-backend.onrender.com/api/v1';
+  return 'https://pqm-delivery-site-production.up.railway.app/api/v1';
 };
 
 const PRIMARY_URL = getBaseUrl();
@@ -31,7 +28,7 @@ export const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 30000,
 });
 
 apiClient.interceptors.request.use(
