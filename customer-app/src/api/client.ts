@@ -1,14 +1,24 @@
 import axios from 'axios';
 import { tokenStorage } from '../utils/secureStorage';
 
-const PRIMARY_URL = process.env['EXPO_PUBLIC_API_BASE_URL'] || 'https://qureshi-mandi-backend.onrender.com/api/v1';
+const getBaseUrl = () => {
+  if (process.env['EXPO_PUBLIC_API_BASE_URL']) {
+    return process.env['EXPO_PUBLIC_API_BASE_URL'];
+  }
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:4000/api/v1';
+  }
+  return 'https://qureshi-mandi-backend.onrender.com/api/v1';
+};
+
+const PRIMARY_URL = getBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: PRIMARY_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60 seconds — handles Render free tier cold starts
+  timeout: 10000,
 });
 
 // Automatic auth token header interceptor

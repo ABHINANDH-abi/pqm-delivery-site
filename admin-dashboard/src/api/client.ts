@@ -14,14 +14,24 @@ export const tokenStorage = {
   },
 };
 
-const PRIMARY_URL = import.meta.env['VITE_API_BASE_URL'] || 'https://qureshi-mandi-backend.onrender.com/api/v1';
+const getBaseUrl = () => {
+  if (import.meta.env['VITE_API_BASE_URL']) {
+    return import.meta.env['VITE_API_BASE_URL'];
+  }
+  if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+    return 'http://localhost:4000/api/v1';
+  }
+  return 'https://qureshi-mandi-backend.onrender.com/api/v1';
+};
+
+const PRIMARY_URL = getBaseUrl();
 
 export const apiClient = axios.create({
   baseURL: PRIMARY_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 60000, // 60 seconds to handle Render free tier cold starts
+  timeout: 10000,
 });
 
 apiClient.interceptors.request.use(
