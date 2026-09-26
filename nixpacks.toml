@@ -1,0 +1,14 @@
+[providers]
+providers = ['node']
+
+[phases.setup]
+nixPkgs = ['nodejs-18_x', 'openssl']
+
+[phases.install]
+cmds = ['npm install', 'cd backend && npm install']
+
+[phases.build]
+cmds = ['cd backend && npx prisma generate']
+
+[start]
+cmd = 'cd backend && npx prisma db push --accept-data-loss && npx ts-node --transpile-only prisma/seed.ts && npx ts-node --transpile-only src/server.ts'
