@@ -73,14 +73,14 @@ export class AuthService {
     const cleanEmail = input.email.toLowerCase().trim();
     const record = otpStore[cleanEmail];
 
-    // Allow dev bypass code 123456 or exact match
-    if (!record && input.otp !== '123456') {
+    if (!record) {
       throw new BadRequestError('OTP expired or not requested. Please tap Resend OTP.');
     }
 
-    if (record && record.otp !== input.otp.trim() && input.otp !== '123456') {
+    if (record.otp !== input.otp.trim()) {
       throw new BadRequestError('Invalid 6-Digit Email OTP. Please check your Gmail or resend.');
     }
+
 
     delete otpStore[cleanEmail];
 
@@ -238,15 +238,16 @@ export class AuthService {
     const cleanEmail = email.toLowerCase().trim();
     const record = otpStore[cleanEmail];
 
-    if (!record && otp.trim() !== '123456') {
+    if (!record) {
       throw new BadRequestError('OTP expired or not requested. Please tap Send OTP.');
     }
 
-    if (record && record.otp !== otp.trim() && otp.trim() !== '123456') {
+    if (record.otp !== otp.trim()) {
       throw new BadRequestError('Invalid 6-Digit Email OTP. Please check your Gmail or resend.');
     }
 
     delete otpStore[cleanEmail];
+
 
     const user = await prisma.user.findUnique({
       where: { email: cleanEmail },

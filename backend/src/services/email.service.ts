@@ -12,35 +12,37 @@ class EmailService {
 
   constructor() {
     const defaultPass = Buffer.from('dHNkeXBmd2J6a21teW91Yw==', 'base64').toString('utf8');
-    const smtpUser = process.env.SMTP_USER || 'b524dc001@smtp-brevo.com';
-    const smtpPass = (process.env.BREVO_API_KEY || process.env.SMTP_PASS || defaultPass).replace(/\s+/g, '');
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    const smtpUser = process.env.SMTP_USER || '6abhi6nad6@gmail.com';
+    const smtpPass = (process.env.SMTP_PASS || defaultPass).replace(/\s+/g, '');
 
     try {
-      if (smtpPass.startsWith('xsmtpsib-') || smtpUser.includes('smtp-brevo.com')) {
+      if (brevoApiKey && brevoApiKey.startsWith('xsmtpsib-')) {
         this.transporter = nodemailer.createTransport({
           host: 'smtp-relay.brevo.com',
           port: 587,
           secure: false,
           auth: {
-            user: smtpUser.includes('smtp-brevo.com') ? smtpUser : 'b524dc001@smtp-brevo.com',
-            pass: smtpPass,
+            user: process.env.SMTP_USER || 'b524dc001@smtp-brevo.com',
+            pass: brevoApiKey,
           },
         });
-        console.log(`[EmailService] ✅ Brevo Dedicated SMTP Relay initialized for: ${smtpUser}`);
-      } else if (smtpPass) {
+        console.log(`[EmailService] ✅ Brevo Dedicated SMTP Relay initialized`);
+      } else {
         this.transporter = nodemailer.createTransport({
           service: 'gmail',
           auth: {
-            user: smtpUser,
+            user: smtpUser.includes('@gmail.com') ? smtpUser : '6abhi6nad6@gmail.com',
             pass: smtpPass,
           },
         });
-        console.log(`[EmailService] ✅ Gmail SMTP initialized for: ${smtpUser}`);
+        console.log(`[EmailService] ✅ Dedicated Gmail SMTP Relay initialized for: 6abhi6nad6@gmail.com`);
       }
     } catch (e) {
       console.warn('[EmailService] SMTP init note:', e);
     }
   }
+
 
   /**
    * Send a rich HTML 6-Digit Verification OTP email to customer/driver inbox

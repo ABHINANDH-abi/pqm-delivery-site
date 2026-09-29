@@ -49,14 +49,14 @@ export default function LoginScreen({ navigation }: any) {
     clearError();
     try {
       setSendingOtp(true);
-      const res = await AuthService.sendOtp(email.trim());
-      setOtpHint(res.otpDebug || '123456');
+      await AuthService.sendOtp(email.trim());
       setIsOtpSent(true);
       Alert.alert(
         'Gmail OTP Sent ✉️',
-        `A 6-digit verification code was sent to ${email.trim()}. Check your inbox or use dev code (${res.otpDebug || '123456'}).`
+        `A 6-digit verification code was sent to your Gmail (${email.trim()}). Please check your inbox.`
       );
     } catch (err: any) {
+
       Alert.alert('Error', err.response?.data?.error?.message || err.message || 'Failed to send OTP.');
     } finally {
       setSendingOtp(false);
@@ -207,8 +207,9 @@ export default function LoginScreen({ navigation }: any) {
                         autoFocus
                       />
                       <Text style={{ fontSize: 11, color: '#10B981', marginTop: 4, fontWeight: '700', textAlign: 'center' }}>
-                        OTP Sent to {email}! Dev bypass code: {otpHint || '123456'}
+                        OTP Sent to {email}! Enter the 6-digit code sent to your Gmail.
                       </Text>
+
                     </View>
 
                     <TouchableOpacity

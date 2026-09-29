@@ -62,12 +62,12 @@ export default function RegisterScreen({ navigation }: any) {
     try {
       setSendingOtp(true);
       const res = await AuthService.sendOtp(email.trim(), name.trim(), phone.trim());
-      setDebugOtpHint(res.otpDebug || '123456');
       setIsOtpModalOpen(true);
       Alert.alert(
         'Gmail OTP Sent ✉️',
-        `A 6-digit verification code has been sent to your Gmail (${email}). Check your inbox or use dev code (${res.otpDebug || '123456'}).`
+        `A 6-digit verification code has been sent to your Gmail (${email}). Please check your Gmail inbox.`
       );
+
     } catch (err: any) {
       const msg = err.response?.data?.error?.message || err.message || 'Failed to send OTP to Gmail.';
       setValidationError(msg);
