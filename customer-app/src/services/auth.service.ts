@@ -52,6 +52,12 @@ export class AuthService {
     return res.data.data;
   }
 
+  static async loginWithOtp(email: string, otp: string): Promise<AuthResponseData> {
+    const res = await apiClient.post<ApiSuccessResponse<AuthResponseData>>('/auth/login-with-otp', { email, otp });
+    return res.data.data;
+  }
+
+
   static async getMe(): Promise<UserPublic> {
     const res = await apiClient.get<ApiSuccessResponse<{ user: UserPublic }>>('/users/me');
     return res.data.data.user;

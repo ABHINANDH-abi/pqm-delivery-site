@@ -11,6 +11,7 @@ interface AuthState {
 
   initAuth: () => Promise<void>;
   login: (payload: LoginPayload) => Promise<void>;
+  loginWithOtp: (email: string, otp: string) => Promise<void>;
   register: (payload: RegisterPayload) => Promise<void>;
   verifyOtpAndRegister: (payload: any) => Promise<void>;
   logout: () => Promise<void>;
@@ -53,6 +54,21 @@ export const useAuthStore = create<AuthState>((set) => ({
       throw new Error(message);
     }
   },
+
+  loginWithOtp: async (email: string, otp: string) => {
+    try {
+      set({ isLoading: true, error: null });
+      const data = await AuthService.loginWithOtp(email, otp);
+      await tokenStorage.setAccessToken(data.accessToken);
+      await tokenStorage.setRefreshToken(data.refreshToken);
+      set({ user: data.user, isAuthenticated: true, isLoading: false });
+    } catch (err: any) {
+      const message = err.response?.data?.error?.message || err.message || 'OTP Login failed.';
+      set({ error: message, isLoading: false });
+      throw new Error(message);
+    }
+  },
+
 
   verifyOtpAndRegister: async (payload: any) => {
     try {

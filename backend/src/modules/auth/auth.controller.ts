@@ -55,6 +55,20 @@ export class AuthController {
     }
   }
 
+  static async loginWithOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email, otp } = req.body;
+      const result = await AuthService.loginWithOtp(email, otp);
+      sendSuccess(res, result, {
+        statusCode: 200,
+        message: 'OTP Login successful',
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
   static async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const { refreshToken } = req.body as RefreshTokenInput;
