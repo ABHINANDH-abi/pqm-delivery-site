@@ -201,6 +201,78 @@ export class DeliveryService {
       },
     });
   }
+
+  /**
+   * Get rider earnings statistics (Daily earnings vs Weekly Monday-Sunday cycle earnings)
+   */
+  async getPartnerEarningsStats(userId: string) {
+    const partner = await this.getDeliveryPartnerByUserId(userId);
+    const startOfDay = getStartOfDay();
+    const startOfWeek = getStartOfWeekMonday();
+
+    const completedOrders = await prisma.order.findMany({
+      where: {
+        deliveryPartnerId: partner.id,
+        status: OrderStatus.DELIVERED,
+      },
+      select: {
+        id: true,
+        deliveryFee: true,
+        deliveredAt: true,
+        createdAt: true,
+      },
+    });
+
+    let todayEarnings = 0;
+    let todayTrips = 0;
+    let weeklyEarnings = 0;
+    let weeklyTrips = 0;
+    let totalEarnings = 0;
+    let totalTrips = completedOrders.length;
+
+    for (const order of completedOrders) {
+      const fee = Number(order.deliveryFee || 50);
+      const orderTime = order.deliveredAt ? new Date(order.deliveredAt) : new Date(order.createdAt);
+
+      totalEarnings += fee;
+
+      if (orderTime >= startOfWeek) {
+        weeklyEarnings += fee;
+        weeklyTrips += 1;
+      }
+
+      if (orderTime >= startOfDay) {
+        todayEarnings += fee;
+        todayTrips += 1;
+      }
+    }
+
+    return {
+      todayEarnings,
+      todayTrips,
+      weeklyEarnings,
+      weeklyTrips,
+      totalEarnings,
+      totalTrips,
+      weekStartDate: startOfWeek.toISOString(),
+    };
+  }
+}
+
+export function getStartOfDay(date = new Date()): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+export function getStartOfWeekMonday(date = new Date()): Date {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1; // 0 is Sunday -> 6 days ago is Monday
+  d.setDate(d.getDate() - diff);
+  return d;
 }
 
 export const deliveryService = new DeliveryService();
+

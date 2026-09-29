@@ -59,6 +59,17 @@ export class DeliveryController {
       next(error);
     }
   }
+
+  async getEarningsStats(req: Request, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.userId;
+      const stats = await deliveryService.getPartnerEarningsStats(userId);
+      return sendSuccess(res, stats, 'Delivery earnings statistics retrieved');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const deliveryController = new DeliveryController();
+

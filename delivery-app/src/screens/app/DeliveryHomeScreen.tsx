@@ -41,7 +41,24 @@ const playDispatchSound = () => {
   } catch (e) {}
 };
 
+const getStartOfDay = (date = new Date()): Date => {
+
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const getStartOfWeekMonday = (date = new Date()): Date => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1; // 0 is Sunday -> 6 days ago is Monday
+  d.setDate(d.getDate() - diff);
+  return d;
+};
+
 export default function DeliveryHomeScreen() {
+
   const user = useAuthStore((s) => s.user);
   const logout = useAuthStore((s) => s.logout);
   const [isOnline, setIsOnline] = useState<boolean>(true);
@@ -211,6 +228,29 @@ export default function DeliveryHomeScreen() {
   );
   const completedOrders = assignedOrders.filter((o) => o.status === 'DELIVERED');
 
+  const startOfDay = getStartOfDay();
+  const startOfWeekMonday = getStartOfWeekMonday();
+
+  const todayOrders = completedOrders.filter((order) => {
+    const orderDate = new Date(order.createdAt);
+    return orderDate >= startOfDay;
+  });
+
+  const weeklyOrders = completedOrders.filter((order) => {
+    const orderDate = new Date(order.createdAt);
+    return orderDate >= startOfWeekMonday;
+  });
+
+  const todayMoneyEarned = todayOrders.reduce((sum, order) => {
+    const fee = typeof order.deliveryFee === 'string' ? parseFloat(order.deliveryFee) : (order.deliveryFee || 50);
+    return sum + fee;
+  }, 0);
+
+  const weeklyMoneyEarned = weeklyOrders.reduce((sum, order) => {
+    const fee = typeof order.deliveryFee === 'string' ? parseFloat(order.deliveryFee) : (order.deliveryFee || 50);
+    return sum + fee;
+  }, 0);
+
   // Calculate Money Earned (@ ₹20/km per trip)
   const totalMoneyEarned = completedOrders.reduce((sum, order) => {
     const fee = typeof order.deliveryFee === 'string' ? parseFloat(order.deliveryFee) : (order.deliveryFee || 50);
@@ -221,6 +261,7 @@ export default function DeliveryHomeScreen() {
     const fee = typeof order.deliveryFee === 'string' ? parseFloat(order.deliveryFee) : (order.deliveryFee || 50);
     return sum + Math.max(1, Math.round(fee / 20));
   }, 0);
+
 
   const displayedOrders = subTab === 'ASSIGNED' ? activeAssigned : availableOrders;
 
@@ -545,16 +586,84 @@ export default function DeliveryHomeScreen() {
         {/* TAB 2: ORDERS & MONEY EARNED */}
         {mainTab === 'EARNINGS' && (
           <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+            {/* Today vs Weekly Earnings Summary Cards */}
+            <View style={{ gap: 12, marginBottom: 16 }}>
+              {/* Today's Earnings Card */}
+              <View
+                style={{
+                  backgroundColor: '#1E293B',
+                  borderRadius: 20,
+                  padding: 18,
+                  borderWidth: 1,
+                  borderColor: '#10B981',
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={{ fontSize: 16 }}>☀️</Text>
+                    <Text style={{ color: '#10B981', fontWeight: '900', fontSize: 13, letterSpacing: 0.5 }}>
+                      TODAY'S EARNINGS (DAILY)
+                    </Text>
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                    <Text style={{ color: '#10B981', fontWeight: '800', fontSize: 11 }}>
+                      {todayOrders.length} {todayOrders.length === 1 ? 'Trip' : 'Trips'} Today
+                    </Text>
+                  </View>
+                </View>
+                <Text style={{ color: '#FFFFFF', fontSize: 32, fontWeight: '900', marginTop: 8 }}>
+                  ₹{todayMoneyEarned}
+                </Text>
+                <Text style={{ color: '#94A3B8', fontSize: 11, marginTop: 2 }}>
+                  Resets every night at 12:00 AM midnight (00:00:00)
+                </Text>
+              </View>
+
+              {/* Weekly Earnings Card (Mon - Sun) */}
+              <View
+                style={{
+                  backgroundColor: '#1E293B',
+                  borderRadius: 20,
+                  padding: 18,
+                  borderWidth: 1.5,
+                  borderColor: '#F59E0B',
+                }}
+              >
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Text style={{ fontSize: 16 }}>📅</Text>
+                    <Text style={{ color: '#F59E0B', fontWeight: '900', fontSize: 13, letterSpacing: 0.5 }}>
+                      THIS WEEK'S EARNINGS (MON–SUN)
+                    </Text>
+                  </View>
+                  <View style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 }}>
+                    <Text style={{ color: '#F59E0B', fontWeight: '800', fontSize: 11 }}>
+                      {weeklyOrders.length} {weeklyOrders.length === 1 ? 'Trip' : 'Trips'} This Week
+                    </Text>
+                  </View>
+                </View>
+                <Text style={{ color: '#FFFFFF', fontSize: 32, fontWeight: '900', marginTop: 8 }}>
+                  ₹{weeklyMoneyEarned}
+                </Text>
+                <Text style={{ color: '#CBD5E1', fontSize: 11, marginTop: 4, fontWeight: '600' }}>
+                  🗓️ Cycle: Mon 00:00 to Sun 12:00 PM • Resets every Monday
+                </Text>
+                <Text style={{ color: '#94A3B8', fontSize: 10, marginTop: 2, fontStyle: 'italic' }}>
+                  Mid-week starts calculate from join day to Sunday midnight.
+                </Text>
+              </View>
+            </View>
+
             {/* Total Money Earned Header Card */}
             <View style={styles.earningsCard}>
-              <Text style={styles.earningsLabel}>TOTAL MONEY EARNED 💰</Text>
+              <Text style={styles.earningsLabel}>LIFETIME TOTAL EARNINGS 💰</Text>
               <Text style={styles.earningsValue}>₹{totalMoneyEarned}</Text>
               <Text style={styles.earningsSub}>Calculated @ ₹20 / km per trip</Text>
 
               <View style={styles.statsGrid}>
                 <View style={styles.statBox}>
                   <Text style={styles.statNumber}>{completedOrders.length}</Text>
-                  <Text style={styles.statTitle}>Trips Done</Text>
+                  <Text style={styles.statTitle}>Total Trips</Text>
                 </View>
 
                 <View style={styles.statBox}>
@@ -580,6 +689,7 @@ export default function DeliveryHomeScreen() {
                 </View>
               </View>
             </View>
+
 
             {/* Completed Orders History Section */}
             <Text style={styles.historyTitle}>Delivery History & Customer Ratings ({completedOrders.length})</Text>

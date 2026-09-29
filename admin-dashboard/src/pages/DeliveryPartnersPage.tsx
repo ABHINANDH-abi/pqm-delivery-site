@@ -49,11 +49,30 @@ interface DeliveryDriverStats {
   phone: string;
   vehicleType: string;
   isAvailable: boolean;
+  todayEarnings: number;
+  weeklyEarnings: number;
   totalEarnings: number;
+  todayOrdersCount: number;
+  weeklyOrdersCount: number;
   completedOrdersCount: number;
   cashCollected: number;
   deliveredOrders: Order[];
 }
+
+const getStartOfDay = (date = new Date()): Date => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+};
+
+const getStartOfWeekMonday = (date = new Date()): Date => {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1; // 0 is Sunday -> 6 days ago is Monday
+  d.setDate(d.getDate() - diff);
+  return d;
+};
 
 export const DeliveryPartnersPage: React.FC = () => {
   const [drivers, setDrivers] = useState<DeliveryDriverStats[]>([]);
@@ -85,7 +104,11 @@ export const DeliveryPartnersPage: React.FC = () => {
           phone: '+91 98765 43212',
           vehicleType: 'Motorcycle / Scooter',
           isAvailable: true,
+          todayEarnings: 0,
+          weeklyEarnings: 0,
           totalEarnings: 0,
+          todayOrdersCount: 0,
+          weeklyOrdersCount: 0,
           completedOrdersCount: 0,
           cashCollected: 0,
           deliveredOrders: [],
@@ -97,12 +120,19 @@ export const DeliveryPartnersPage: React.FC = () => {
           phone: '+91 98765 88888',
           vehicleType: 'Scooter / EV Bike',
           isAvailable: true,
+          todayEarnings: 0,
+          weeklyEarnings: 0,
           totalEarnings: 0,
+          todayOrdersCount: 0,
+          weeklyOrdersCount: 0,
           completedOrdersCount: 0,
           cashCollected: 0,
           deliveredOrders: [],
         },
       };
+
+      const startOfDay = getStartOfDay();
+      const startOfWeekMonday = getStartOfWeekMonday();
 
       // Populate driver statistics from actual delivered orders
       allOrders.forEach((order) => {
@@ -113,10 +143,22 @@ export const DeliveryPartnersPage: React.FC = () => {
         const targetDriver = driverMap[driverIdKey] || driverMap['driver-1']!;
 
         if (order.status === 'DELIVERED') {
+          const orderDate = new Date(order.createdAt);
+
           targetDriver.completedOrdersCount += 1;
           targetDriver.totalEarnings += fee;
           targetDriver.cashCollected += total;
           targetDriver.deliveredOrders.push(order);
+
+          if (orderDate >= startOfWeekMonday) {
+            targetDriver.weeklyEarnings += fee;
+            targetDriver.weeklyOrdersCount += 1;
+          }
+
+          if (orderDate >= startOfDay) {
+            targetDriver.todayEarnings += fee;
+            targetDriver.todayOrdersCount += 1;
+          }
         }
       });
 
@@ -132,9 +174,12 @@ export const DeliveryPartnersPage: React.FC = () => {
     fetchDriverData();
   }, []);
 
+  const totalFleetTodayEarnings = drivers.reduce((sum, d) => sum + d.todayEarnings, 0);
+  const totalFleetWeeklyEarnings = drivers.reduce((sum, d) => sum + d.weeklyEarnings, 0);
   const totalFleetEarnings = drivers.reduce((sum, d) => sum + d.totalEarnings, 0);
   const totalFleetDeliveries = drivers.reduce((sum, d) => sum + d.completedOrdersCount, 0);
   const totalCashCollected = drivers.reduce((sum, d) => sum + d.cashCollected, 0);
+
 
   return (
     <div className="space-y-6">
@@ -163,8 +208,30 @@ export const DeliveryPartnersPage: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Total Rider Earnings</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">Today's Fleet Earnings</span>
             <div className="w-9 h-9 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+              <DollarSign className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="mt-3 text-3xl font-black text-white">₹{totalFleetTodayEarnings}</p>
+          <span className="text-xs text-slate-400 font-medium">Daily rider earnings today</span>
+        </div>
+
+        <div className="bg-slate-900 border border-amber-500/30 rounded-2xl p-5 shadow-lg bg-amber-500/5">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Weekly Earnings (Mon–Sun)</span>
+            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+              <TrendingUp className="w-5 h-5" />
+            </div>
+          </div>
+          <p className="mt-3 text-3xl font-black text-amber-400">₹{totalFleetWeeklyEarnings}</p>
+          <span className="text-xs text-slate-300 font-medium">Monday 00:00 to Sunday 12:00 PM cycle</span>
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-sky-400">Total Lifetime Earnings</span>
+            <div className="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400">
               <DollarSign className="w-5 h-5" />
             </div>
           </div>
@@ -174,29 +241,7 @@ export const DeliveryPartnersPage: React.FC = () => {
 
         <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-400">Delivered Orders</span>
-            <div className="w-9 h-9 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
-              <PackageCheck className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="mt-3 text-3xl font-black text-white">{totalFleetDeliveries}</p>
-          <span className="text-xs text-slate-400 font-medium">Completed food deliveries</span>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-sky-400">Cash Collected (COD)</span>
-            <div className="w-9 h-9 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-400">
-              <TrendingUp className="w-5 h-5" />
-            </div>
-          </div>
-          <p className="mt-3 text-3xl font-black text-white">₹{totalCashCollected}</p>
-          <span className="text-xs text-slate-400 font-medium">Collected cash at customer door</span>
-        </div>
-
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-400">Fleet Duty Status</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-purple-400">Fleet & Duty Status</span>
             <div className="w-9 h-9 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
               <Bike className="w-5 h-5" />
             </div>
@@ -204,7 +249,7 @@ export const DeliveryPartnersPage: React.FC = () => {
           <p className="mt-3 text-3xl font-black text-emerald-400">
             {drivers.filter((d) => d.isAvailable).length} Online
           </p>
-          <span className="text-xs text-slate-400 font-medium">Active delivery partners</span>
+          <span className="text-xs text-slate-400 font-medium">{totalFleetDeliveries} Total deliveries completed</span>
         </div>
       </div>
 
@@ -258,12 +303,12 @@ export const DeliveryPartnersPage: React.FC = () => {
                   </div>
 
                   {/* Driver Money & Performance Snapshot */}
-                  <div className="flex items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                  <div className="flex flex-wrap items-center gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800">
                     <div className="text-right">
                       <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
-                        Driver Rating
+                        Rating
                       </span>
-                      <span className="text-xl font-black text-amber-400 flex items-center justify-end gap-1">
+                      <span className="text-lg font-black text-amber-400 flex items-center justify-end gap-1">
                         ⭐{' '}
                         {driver.deliveredOrders.filter((o) => o.rating).length > 0
                           ? (
@@ -280,18 +325,30 @@ export const DeliveryPartnersPage: React.FC = () => {
 
                     <div className="text-right">
                       <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider block">
-                        Money Earned
+                        Today
                       </span>
-                      <span className="text-2xl font-black text-white">₹{driver.totalEarnings}</span>
+                      <span className="text-lg font-black text-emerald-400">₹{driver.todayEarnings}</span>
+                      <span className="text-[10px] text-slate-500 block">{driver.todayOrdersCount} trips</span>
+                    </div>
+
+                    <div className="h-10 w-px bg-slate-800" />
+
+                    <div className="text-right bg-amber-500/10 px-3 py-1 rounded-lg border border-amber-500/30">
+                      <span className="text-xs font-black text-amber-400 uppercase tracking-wider block">
+                        Weekly (Mon–Sun)
+                      </span>
+                      <span className="text-xl font-black text-amber-400">₹{driver.weeklyEarnings}</span>
+                      <span className="text-[10px] text-slate-300 block">{driver.weeklyOrdersCount} trips this week</span>
                     </div>
 
                     <div className="h-10 w-px bg-slate-800" />
 
                     <div className="text-right">
-                      <span className="text-xs font-bold text-amber-400 uppercase tracking-wider block">
-                        Deliveries
+                      <span className="text-xs font-bold text-sky-400 uppercase tracking-wider block">
+                        Total
                       </span>
-                      <span className="text-2xl font-black text-white">{driver.completedOrdersCount}</span>
+                      <span className="text-lg font-black text-white">₹{driver.totalEarnings}</span>
+                      <span className="text-[10px] text-slate-500 block">{driver.completedOrdersCount} trips</span>
                     </div>
 
                     <div className="h-10 w-px bg-slate-800" />
@@ -305,6 +362,7 @@ export const DeliveryPartnersPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
 
                 {/* Collapsible Delivered Orders History List */}
                 {isExpanded && (

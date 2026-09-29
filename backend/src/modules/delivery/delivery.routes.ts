@@ -47,4 +47,11 @@ router.patch(
   deliveryController.updateLocation
 );
 
+router.get(
+  '/earnings',
+  authorizeRoles(UserRole.DELIVERY_PARTNER, UserRole.ADMIN),
+  deliveryController.getEarningsStats
+);
+
 export default router;
+
