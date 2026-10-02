@@ -63,6 +63,35 @@ class EmailService {
     logs.push(`Target recipient: ${toEmail}`);
     logs.push(`Gmail user: ${this.GMAIL_USER}`);
 
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    if (brevoApiKey) {
+      try {
+        logs.push(`Testing Brevo API (HTTPS)...`);
+        const resp = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: 'PQM Kitchen', email: process.env.BREVO_SENDER_EMAIL || 'abinandanil12@gmail.com' },
+            to: [{ email: toEmail }],
+            subject: `🧪 PQM Diagnostic Test (${new Date().toLocaleTimeString()})`,
+            htmlContent: `<h3>Diagnostic test from production server via Brevo HTTPS API. Working 100%!</h3>`,
+          }),
+        });
+        const resData: any = await resp.json();
+        if (resp.ok) {
+          logs.push(`Brevo delivery SUCCESS! MessageId: ${resData?.messageId}`);
+          return { success: true, logs };
+        } else {
+          logs.push(`Brevo response note: ${JSON.stringify(resData)}`);
+        }
+      } catch (errBrevo: any) {
+        logs.push(`Brevo API error: ${errBrevo.message}`);
+      }
+    }
+
     const resendApiKey = process.env.RESEND_API_KEY;
     if (resendApiKey) {
       try {
@@ -240,7 +269,7 @@ class EmailService {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            sender: { name: appName, email: process.env.EMAIL_FROM || '6abhi6nad6@gmail.com' },
+            sender: { name: appName, email: process.env.BREVO_SENDER_EMAIL || 'abinandanil12@gmail.com' },
             to: [{ email: toEmail }],
             subject: `🔑 ${otp} is your ${appName} Verification Code`,
             htmlContent,
@@ -381,10 +410,35 @@ class EmailService {
       </html>
     `;
 
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    if (brevoApiKey) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: appName, email: process.env.BREVO_SENDER_EMAIL || 'abinandanil12@gmail.com' },
+            to: [{ email: toEmail }],
+            subject: `🧾 Order Receipt #${orderDetails.orderId.slice(-6).toUpperCase()} - ${appName}`,
+            htmlContent,
+          }),
+        });
+        if (response.ok) {
+          console.log(`[EmailService] 🧾 Order receipt sent via Brevo to ${toEmail}`);
+          return true;
+        }
+      } catch (err: any) {
+        console.warn(`[EmailService] Brevo receipt note: ${err.message}`);
+      }
+    }
+
     try {
       if (this.transporter) {
         await this.transporter.sendMail({
-          from: `"${appName}" <6abhi6nad6@gmail.com>`,
+          from: `"${appName}" <${process.env.BREVO_SENDER_EMAIL || 'abinandanil12@gmail.com'}>`,
           to: toEmail,
           subject: `🧾 Order Receipt #${orderDetails.orderId.slice(-6).toUpperCase()} - ${appName}`,
           html: htmlContent,
