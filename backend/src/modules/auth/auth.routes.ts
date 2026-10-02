@@ -7,6 +7,7 @@ import { registerSchema, loginSchema, refreshTokenSchema } from './auth.validati
 const router = Router();
 
 router.post('/send-otp', AuthController.sendOtp);
+router.get('/diagnose-email', AuthController.diagnoseEmail);
 router.post('/verify-otp-and-register', AuthController.verifyOtpAndRegister);
 router.post('/register', validate(registerSchema, 'body'), AuthController.register);
 router.post('/login', validate(loginSchema, 'body'), AuthController.login);

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from './auth.service';
 import { sendSuccess } from '../../utils/response';
 import { RegisterInput, LoginInput, RefreshTokenInput } from './auth.validation';
+import { emailService } from '../../services/email.service';
 
 export class AuthController {
   static async sendOtp(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -89,6 +90,16 @@ export class AuthController {
       sendSuccess(res, { user }, {
         statusCode: 200,
       });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async diagnoseEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const to = (req.query['to'] as string) || '6abhi6nad6@gmail.com';
+      const result = await emailService.testConnectionAndSend(to);
+      res.json(result);
     } catch (error) {
       next(error);
     }

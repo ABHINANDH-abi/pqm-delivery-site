@@ -1,83 +1,117 @@
 import nodemailer from 'nodemailer';
 
 /**
- * Production Multi-Provider Transactional Email Service.
- * Priority:
- * 1. Resend API (if RESEND_API_KEY env var set)
- * 2. Brevo API (if BREVO_API_KEY env var set)
- * 3. Gmail SMTP (guaranteed fallback — hardcoded credentials)
+ * Production Transactional Email Service.
+ * Primary: Dedicated Gmail SMTP Relay (6abhi6nad6@gmail.com) via port 465 SSL & 587 TLS
+ * Secondary: Resend API (if RESEND_API_KEY env var set)
  */
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
 
-  // Guaranteed Gmail SMTP credentials — always works as fallback
+  // Guaranteed working Gmail SMTP credentials
   private readonly GMAIL_USER = '6abhi6nad6@gmail.com';
   private readonly GMAIL_PASS = Buffer.from('dHNkeXBmd2J6a21teW91Yw==', 'base64').toString('utf8').replace(/\s+/g, '');
 
   constructor() {
-    const brevoApiKey = process.env.BREVO_API_KEY;
+    this.initTransporter();
+  }
+
+  private initTransporter() {
+    const gmailUser = (process.env.SMTP_USER && process.env.SMTP_USER.includes('@gmail.com'))
+      ? process.env.SMTP_USER
+      : this.GMAIL_USER;
+    const gmailPass = process.env.SMTP_PASS
+      ? process.env.SMTP_PASS.replace(/\s+/g, '')
+      : this.GMAIL_PASS;
 
     try {
-      if (brevoApiKey && brevoApiKey.startsWith('xsmtpsib-')) {
-        // Brevo SMTP relay
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp-relay.brevo.com',
-          port: 587,
-          secure: false,
-          auth: {
-            user: process.env.SMTP_USER || 'b524dc001@smtp-brevo.com',
-            pass: brevoApiKey,
-          },
-        });
-        console.log(`[EmailService] ✅ Brevo Dedicated SMTP Relay initialized`);
-      } else {
-        // Gmail SMTP — use env vars if set, otherwise use hardcoded guaranteed credentials
-        const gmailUser = (process.env.SMTP_USER && process.env.SMTP_USER.includes('@gmail.com'))
-          ? process.env.SMTP_USER
-          : this.GMAIL_USER;
-        const gmailPass = process.env.SMTP_PASS
-          ? process.env.SMTP_PASS.replace(/\s+/g, '')
-          : this.GMAIL_PASS;
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: {
+          user: gmailUser,
+          pass: gmailPass,
+        },
+      });
+      console.log(`[EmailService] ✅ Gmail SMTP Relay initialized for: ${gmailUser}`);
 
-        this.transporter = nodemailer.createTransport({
-          host: 'smtp.gmail.com',
-          port: 465,
-          secure: true,
-          auth: {
-            user: gmailUser,
-            pass: gmailPass,
-          },
-        });
-        console.log(`[EmailService] ✅ Gmail SMTP initialized for: ${gmailUser}`);
-
-        // Verify connection on startup so we know immediately if it's broken
-        this.transporter.verify((err, success) => {
-          if (err) {
-            console.error(`[EmailService] ❌ Gmail SMTP verify FAILED: ${err.message}`);
-            // Retry with hardcoded credentials if env var credentials failed
-            if (gmailUser !== this.GMAIL_USER || gmailPass !== this.GMAIL_PASS) {
-              console.log(`[EmailService] 🔄 Retrying with hardcoded Gmail credentials...`);
-              this.transporter = nodemailer.createTransport({
-                host: 'smtp.gmail.com',
-                port: 465,
-                secure: true,
-                auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
-              });
-              this.transporter.verify((err2, ok2) => {
-                if (err2) console.error(`[EmailService] ❌ Hardcoded Gmail also failed: ${err2.message}`);
-                else console.log(`[EmailService] ✅ Hardcoded Gmail SMTP verified OK`);
-              });
-            }
-          } else {
-            console.log(`[EmailService] ✅ Gmail SMTP connection verified and ready`);
-          }
-        });
-      }
+      this.transporter.verify((err) => {
+        if (err) {
+          console.warn(`[EmailService] ⚠️ Port 465 note: ${err.message}. Trying port 587...`);
+          this.transporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: { user: gmailUser, pass: gmailPass },
+          });
+        } else {
+          console.log(`[EmailService] ✅ Gmail SMTP port 465 connection verified and ready`);
+        }
+      });
     } catch (e) {
       console.error('[EmailService] ❌ SMTP init failed:', e);
     }
   }
 
+  /**
+   * Diagnostic method to test SMTP from the live production server and return logs
+   */
+  async testConnectionAndSend(toEmail: string): Promise<{ success: boolean; logs: string[]; error?: string }> {
+    const logs: string[] = [];
+    logs.push(`Diagnostic started at ${new Date().toISOString()}`);
+    logs.push(`Target recipient: ${toEmail}`);
+    logs.push(`Gmail user: ${this.GMAIL_USER}`);
+
+    // Try Port 465
+    try {
+      logs.push(`Attempting port 465 SSL connection...`);
+      const t465 = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
+      });
+      await t465.verify();
+      logs.push(`Port 465 verify SUCCESS!`);
+
+      const info = await t465.sendMail({
+        from: `"PQM Kitchen" <${this.GMAIL_USER}>`,
+        to: toEmail,
+        subject: `🧪 PQM Diagnostic Test (${new Date().toLocaleTimeString()})`,
+        text: `Diagnostic email from production server. Gmail SMTP is working!`,
+      });
+      logs.push(`Email delivered! MessageId: ${info.messageId}`);
+      return { success: true, logs };
+    } catch (err465: any) {
+      logs.push(`Port 465 failed: ${err465.message}`);
+
+      // Try Port 587
+      try {
+        logs.push(`Attempting fallback port 587 TLS...`);
+        const t587 = nodemailer.createTransport({
+          host: 'smtp.gmail.com',
+          port: 587,
+          secure: false,
+          auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
+        });
+        await t587.verify();
+        logs.push(`Port 587 verify SUCCESS!`);
+
+        const info = await t587.sendMail({
+          from: `"PQM Kitchen" <${this.GMAIL_USER}>`,
+          to: toEmail,
+          subject: `🧪 PQM Diagnostic Test via 587 (${new Date().toLocaleTimeString()})`,
+          text: `Diagnostic email from production server via port 587.`,
+        });
+        logs.push(`Email delivered via 587! MessageId: ${info.messageId}`);
+        return { success: true, logs };
+      } catch (err587: any) {
+        logs.push(`Port 587 also failed: ${err587.message}`);
+        return { success: false, logs, error: err587.message };
+      }
+    }
+  }
 
   /**
    * Send a rich HTML 6-Digit Verification OTP email to customer/driver inbox
@@ -164,34 +198,7 @@ class EmailService {
       }
     }
 
-    // 2. Secondary HTTP REST Dispatch via Brevo API (if BREVO_API_KEY configured)
-    if (brevoApiKey) {
-      try {
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-          method: 'POST',
-          headers: {
-            'api-key': brevoApiKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            sender: { name: appName, email: process.env.EMAIL_FROM || 'b524dc001@smtp-brevo.com' },
-            to: [{ email: toEmail }],
-            subject: `🔑 ${otp} is your ${appName} Verification Code`,
-            htmlContent,
-          }),
-        });
-
-        const resData: any = await response.json();
-        if (response.ok) {
-          console.log(`[EmailService] ✉️ OTP sent via Brevo API to ${toEmail}. MessageId: ${resData?.messageId}`);
-          return true;
-        }
-      } catch (err: any) {
-        console.warn(`[EmailService] Brevo API note: ${err.message}`);
-      }
-    }
-
-    // 3. Fallback via Nodemailer SMTP transporter
+    // 2. Primary Gmail SMTP Dispatch
     if (this.transporter) {
       try {
         const info = await this.transporter.sendMail({
@@ -200,32 +207,51 @@ class EmailService {
           subject: `🔑 ${otp} is your ${appName} Verification Code`,
           html: htmlContent,
         });
-        console.log(`[EmailService] ✉️ OTP sent via SMTP to ${toEmail}. MessageId: ${info.messageId}`);
+        console.log(`[EmailService] ✉️ OTP sent via Gmail SMTP to ${toEmail}. MessageId: ${info.messageId}`);
         return true;
       } catch (err: any) {
-        console.error(`[EmailService] ❌ SMTP transporter failed: ${err.message}`);
+        console.error(`[EmailService] ❌ Main Gmail SMTP failed (${err.message}). Trying fallback transport...`);
       }
     }
 
-    // 4. Emergency direct Gmail send — guaranteed last resort
+    // 3. Direct Port 465 SSL send
     try {
-      console.log(`[EmailService] 🆘 Attempting emergency direct Gmail SMTP for ${toEmail}...`);
-      const emergencyTransporter = nodemailer.createTransport({
+      const directTransporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 465,
         secure: true,
         auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
       });
-      const info = await emergencyTransporter.sendMail({
+      const info = await directTransporter.sendMail({
         from: `"${appName}" <${this.GMAIL_USER}>`,
         to: toEmail,
         subject: `🔑 ${otp} is your ${appName} Verification Code`,
         html: htmlContent,
       });
-      console.log(`[EmailService] ✅ Emergency Gmail sent OTP to ${toEmail}. MessageId: ${info.messageId}`);
+      console.log(`[EmailService] ✅ Direct port 465 sent OTP to ${toEmail}. MessageId: ${info.messageId}`);
       return true;
     } catch (err: any) {
-      console.error(`[EmailService] ❌ Emergency Gmail also failed: ${err.message}`);
+      console.error(`[EmailService] ⚠️ Port 465 failed: ${err.message}. Trying port 587 TLS...`);
+    }
+
+    // 4. Fallback Port 587 TLS send
+    try {
+      const tlsTransporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
+      });
+      const info = await tlsTransporter.sendMail({
+        from: `"${appName}" <${this.GMAIL_USER}>`,
+        to: toEmail,
+        subject: `🔑 ${otp} is your ${appName} Verification Code`,
+        html: htmlContent,
+      });
+      console.log(`[EmailService] ✅ Port 587 TLS sent OTP to ${toEmail}. MessageId: ${info.messageId}`);
+      return true;
+    } catch (err: any) {
+      console.error(`[EmailService] ❌ Port 587 TLS also failed: ${err.message}`);
       return false;
     }
 
