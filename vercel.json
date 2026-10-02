@@ -1,4 +1,5 @@
 {
+  "outputDirectory": "landing-website",
   "cleanUrls": false,
   "rewrites": [
     { "source": "/admin_index", "destination": "/admin_index.html" },
