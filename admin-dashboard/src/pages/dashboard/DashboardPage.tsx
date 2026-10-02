@@ -11,8 +11,9 @@ export const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    const loadDashboardData = async () => {
+    const loadDashboardData = async (silent = false) => {
       try {
+        if (!silent) setLoading(true);
         const data = await ordersApi.getAll();
         setOrders(data);
       } catch (err) {
@@ -21,7 +22,9 @@ export const DashboardPage: React.FC = () => {
         setLoading(false);
       }
     };
-    loadDashboardData();
+    loadDashboardData(false);
+    const timer = setInterval(() => loadDashboardData(true), 15000);
+    return () => clearInterval(timer);
   }, []);
 
   const ratedOrders = orders.filter((o) => o.rating && o.rating > 0);

@@ -15,8 +15,9 @@ export const tokenStorage = {
 };
 
 const getBaseUrl = () => {
-  if (import.meta.env['VITE_API_BASE_URL']) {
-    return import.meta.env['VITE_API_BASE_URL'];
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    return envUrl.trim();
   }
   return 'https://pqm-delivery-site-production.up.railway.app/api/v1';
 };
