@@ -516,6 +516,7 @@ export const OrdersPage: React.FC = () => {
             ) : null}
 
             <div className="flex items-center justify-end gap-3 pt-2">
+              {getNextActionButtons(viewingOrder)}
               <button
                 onClick={() => setViewingOrder(null)}
                 className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl transition"
