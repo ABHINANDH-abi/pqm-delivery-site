@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useAuthStore } from '../../store/auth.store';
 import { deliveryApi, DeliveryOrder, OrderStatus } from '../../api/delivery.api';
+import * as Notifications from 'expo-notifications';
 import { pushNotification } from '../../utils/notification';
 import { notificationsApi, AppNotification } from '../../api/notifications.api';
 
@@ -130,8 +131,17 @@ export default function DeliveryHomeScreen() {
 
   useEffect(() => {
     pushNotification.requestPermission();
+    pushNotification.registerForPushNotificationsAsync();
     fetchOrders();
     const interval = setInterval(fetchOrders, 4000); // 4-second fast refresh loop
+
+    // Notification click listener when driver taps the background alarm notification
+    const responseSub = Notifications.addNotificationResponseReceivedListener((response: any) => {
+      const data = response?.notification?.request?.content?.data as any;
+      if (data?.orderId) {
+        fetchOrders();
+      }
+    });
 
     const gpsInterval = setInterval(() => {
       if (isOnline && typeof navigator !== 'undefined' && navigator.geolocation) {
@@ -148,6 +158,7 @@ export default function DeliveryHomeScreen() {
     }, 8000);
 
     return () => {
+      responseSub.remove();
       clearInterval(interval);
       clearInterval(gpsInterval);
     };
@@ -157,6 +168,7 @@ export default function DeliveryHomeScreen() {
     setIsOnline(val);
     if (val) {
       pushNotification.requestPermission();
+      pushNotification.registerForPushNotificationsAsync();
     }
     try {
       await deliveryApi.updateLocation(11.0168, 76.9558, val);

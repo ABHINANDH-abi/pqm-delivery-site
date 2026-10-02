@@ -1,6 +1,8 @@
 import { Alert, Vibration, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 
+import { notificationsApi } from '../api/notifications.api';
+
 // Configure foreground & background notification presentation
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -12,13 +14,30 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// Create High-Priority Android System Notification Channel with Audio Chime & Vibration
+// Create High-Priority Android System Notification Channels with Audio Chime & Vibration
 if (Platform.OS === 'android') {
+  // 1. High-Priority Alarm Channel (Rings on Alarm audio stream even during Do Not Disturb)
+  Notifications.setNotificationChannelAsync('order_alerts_alarm', {
+    name: 'New Order Delivery Alarm',
+    importance: Notifications.AndroidImportance.MAX,
+    vibrationPattern: [0, 1000, 500, 1000, 500, 1000, 500, 1500],
+    sound: 'default',
+    enableVibrate: true,
+    showBadge: true,
+    bypassDnd: true,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    audioAttributes: {
+      usage: Notifications.AndroidAudioUsage.ALARM,
+      contentType: Notifications.AndroidAudioContentType.SONIFICATION,
+    },
+  }).catch((e) => console.log('Alarm channel error:', e));
+
+  // 2. Standard Alert Channel
   Notifications.setNotificationChannelAsync('order_alerts', {
     name: 'New Order Driver Alerts',
     importance: Notifications.AndroidImportance.MAX,
     vibrationPattern: [0, 500, 250, 500, 250, 1000],
-    sound: 'default', // OS Chime sound (like Google Pay payment audio)
+    sound: 'default',
     enableVibrate: true,
     showBadge: true,
   }).catch((e) => console.log('Notification channel error:', e));
@@ -64,23 +83,60 @@ export const pushNotification = {
     return true;
   },
 
-  sendOSNotification: async (title: string, bodyText: string, tag?: string) => {
-    // 1. Phone Hardware Vibration Pattern
+  registerForPushNotificationsAsync: async (): Promise<string | null> => {
+    if (Platform.OS === 'web') return null;
+
     try {
-      Vibration.vibrate([0, 1000, 400, 1000, 400, 1500]);
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+
+      if (finalStatus !== 'granted') {
+        console.log('[Push] Notification permission not granted');
+        return null;
+      }
+
+      // Fetch Expo Push Token for mobile background push delivery
+      const tokenData = await Notifications.getExpoPushTokenAsync({
+        projectId: 'bf7f8db4-6a77-485b-b67c-e8b1728f6dfa',
+      });
+      const token = tokenData?.data;
+
+      if (token) {
+        console.log('[Push] ✅ Successfully registered Expo Push Token:', token);
+        await notificationsApi.registerFcmToken(token, Platform.OS.toUpperCase()).catch((e) => {
+          console.log('[Push] Warning syncing token to backend:', e?.message || e);
+        });
+      }
+
+      return token;
+    } catch (err: any) {
+      console.log('[Push] Error getting push token:', err?.message || err);
+      return null;
+    }
+  },
+
+  sendOSNotification: async (title: string, bodyText: string, tag?: string) => {
+    // 1. Aggressive Phone Hardware Vibration Pattern (Alarm cadence)
+    try {
+      Vibration.vibrate([0, 1000, 500, 1000, 500, 1000, 500, 1500]);
     } catch (e) {}
 
-    // 2. Android / iOS Native System Notification with Audio Chime & Banner (Google Pay Style)
+    // 2. Android / iOS Native System Notification with Loud Alarm & Heads-up Banner
     if (Platform.OS !== 'web') {
       try {
         await Notifications.scheduleNotificationAsync({
           content: {
             title,
             body: bodyText,
-            sound: 'default', // Google Pay / System Chime sound
-            priority: Notifications.AndroidNotificationPriority.MAX, // Force MAX priority status bar banner
-            channelId: 'order_alerts', // Direct to MAX importance channel with banner & audio
-            vibrate: [0, 500, 250, 500, 250, 1000],
+            sound: 'default',
+            priority: Notifications.AndroidNotificationPriority.MAX, // Force MAX priority status bar heads-up banner
+            channelId: 'order_alerts_alarm', // Direct to MAX importance alarm channel
+            vibrate: [0, 1000, 500, 1000, 500, 1000, 500, 1500],
             data: { tag: tag || `dispatch-${Date.now()}` },
           } as any,
           trigger: null, // Deliver immediately

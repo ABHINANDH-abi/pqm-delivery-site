@@ -19,4 +19,8 @@ export const notificationsApi = {
   markAsRead: async (id: string): Promise<void> => {
     await apiClient.patch(`/notifications/${id}/read`);
   },
+
+  registerFcmToken: async (fcmToken: string, deviceType: string = 'ANDROID'): Promise<void> => {
+    await apiClient.post('/notifications/fcm-token', { fcmToken, deviceType });
+  },
 };

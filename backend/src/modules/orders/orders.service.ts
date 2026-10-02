@@ -141,6 +141,11 @@ export class OrdersService {
       },
     });
 
+    // Broadcast high-priority alarm notification to available delivery partner devices
+    notificationsService.sendNewOrderDispatchPush(order).catch((err) => {
+      console.warn('[OrdersService] Delivery partner push alert note:', err.message);
+    });
+
     return order;
   }
 
