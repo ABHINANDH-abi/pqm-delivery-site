@@ -231,7 +231,6 @@ class EmailService {
     }
 
     // 2. Secondary HTTP REST Dispatch via Brevo API (if BREVO_API_KEY configured)
-    const brevoApiKey = process.env.BREVO_API_KEY;
     if (brevoApiKey) {
       try {
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
