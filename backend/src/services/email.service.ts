@@ -2,22 +2,24 @@ import nodemailer from 'nodemailer';
 
 /**
  * Production Multi-Provider Transactional Email Service.
- * Supports:
- * 1. Brevo SMTP / API Key (`xsmtpsib-` / `b524dc001@smtp-brevo.com`)
- * 2. Resend API (RESEND_API_KEY)
- * 3. Gmail SMTP Fallback
+ * Priority:
+ * 1. Resend API (if RESEND_API_KEY env var set)
+ * 2. Brevo API (if BREVO_API_KEY env var set)
+ * 3. Gmail SMTP (guaranteed fallback — hardcoded credentials)
  */
 class EmailService {
   private transporter: nodemailer.Transporter | null = null;
 
+  // Guaranteed Gmail SMTP credentials — always works as fallback
+  private readonly GMAIL_USER = '6abhi6nad6@gmail.com';
+  private readonly GMAIL_PASS = Buffer.from('dHNkeXBmd2J6a21teW91Yw==', 'base64').toString('utf8').replace(/\s+/g, '');
+
   constructor() {
-    const defaultPass = Buffer.from('dHNkeXBmd2J6a21teW91Yw==', 'base64').toString('utf8');
     const brevoApiKey = process.env.BREVO_API_KEY;
-    const smtpUser = process.env.SMTP_USER || '6abhi6nad6@gmail.com';
-    const smtpPass = (process.env.SMTP_PASS || defaultPass).replace(/\s+/g, '');
 
     try {
       if (brevoApiKey && brevoApiKey.startsWith('xsmtpsib-')) {
+        // Brevo SMTP relay
         this.transporter = nodemailer.createTransport({
           host: 'smtp-relay.brevo.com',
           port: 587,
@@ -29,17 +31,50 @@ class EmailService {
         });
         console.log(`[EmailService] ✅ Brevo Dedicated SMTP Relay initialized`);
       } else {
+        // Gmail SMTP — use env vars if set, otherwise use hardcoded guaranteed credentials
+        const gmailUser = (process.env.SMTP_USER && process.env.SMTP_USER.includes('@gmail.com'))
+          ? process.env.SMTP_USER
+          : this.GMAIL_USER;
+        const gmailPass = process.env.SMTP_PASS
+          ? process.env.SMTP_PASS.replace(/\s+/g, '')
+          : this.GMAIL_PASS;
+
         this.transporter = nodemailer.createTransport({
-          service: 'gmail',
+          host: 'smtp.gmail.com',
+          port: 465,
+          secure: true,
           auth: {
-            user: smtpUser.includes('@gmail.com') ? smtpUser : '6abhi6nad6@gmail.com',
-            pass: smtpPass,
+            user: gmailUser,
+            pass: gmailPass,
           },
         });
-        console.log(`[EmailService] ✅ Dedicated Gmail SMTP Relay initialized for: 6abhi6nad6@gmail.com`);
+        console.log(`[EmailService] ✅ Gmail SMTP initialized for: ${gmailUser}`);
+
+        // Verify connection on startup so we know immediately if it's broken
+        this.transporter.verify((err, success) => {
+          if (err) {
+            console.error(`[EmailService] ❌ Gmail SMTP verify FAILED: ${err.message}`);
+            // Retry with hardcoded credentials if env var credentials failed
+            if (gmailUser !== this.GMAIL_USER || gmailPass !== this.GMAIL_PASS) {
+              console.log(`[EmailService] 🔄 Retrying with hardcoded Gmail credentials...`);
+              this.transporter = nodemailer.createTransport({
+                host: 'smtp.gmail.com',
+                port: 465,
+                secure: true,
+                auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
+              });
+              this.transporter.verify((err2, ok2) => {
+                if (err2) console.error(`[EmailService] ❌ Hardcoded Gmail also failed: ${err2.message}`);
+                else console.log(`[EmailService] ✅ Hardcoded Gmail SMTP verified OK`);
+              });
+            }
+          } else {
+            console.log(`[EmailService] ✅ Gmail SMTP connection verified and ready`);
+          }
+        });
       }
     } catch (e) {
-      console.warn('[EmailService] SMTP init note:', e);
+      console.error('[EmailService] ❌ SMTP init failed:', e);
     }
   }
 
@@ -156,26 +191,42 @@ class EmailService {
       }
     }
 
-    // 3. Fallback Dispatch via Nodemailer SMTP (Brevo / Gmail SMTP Relay)
+    // 3. Fallback via Nodemailer SMTP transporter
     if (this.transporter) {
       try {
-        const senderEmail = process.env.SMTP_USER && !process.env.SMTP_USER.includes('smtp-brevo.com')
-          ? process.env.SMTP_USER
-          : '6abhi6nad6@gmail.com';
-
         const info = await this.transporter.sendMail({
-          from: `"${appName}" <${senderEmail}>`,
+          from: `"${appName}" <${this.GMAIL_USER}>`,
           to: toEmail,
           subject: `🔑 ${otp} is your ${appName} Verification Code`,
           html: htmlContent,
         });
-
-        console.log(`[EmailService] ✉️ Real OTP email sent via SMTP Relay to ${toEmail}. MessageId: ${info.messageId}`);
+        console.log(`[EmailService] ✉️ OTP sent via SMTP to ${toEmail}. MessageId: ${info.messageId}`);
         return true;
       } catch (err: any) {
-        console.warn(`[EmailService] ⚠️ SMTP Relay dispatch note (${err.message}). OTP active in system.`);
-        return false;
+        console.error(`[EmailService] ❌ SMTP transporter failed: ${err.message}`);
       }
+    }
+
+    // 4. Emergency direct Gmail send — guaranteed last resort
+    try {
+      console.log(`[EmailService] 🆘 Attempting emergency direct Gmail SMTP for ${toEmail}...`);
+      const emergencyTransporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
+        auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
+      });
+      const info = await emergencyTransporter.sendMail({
+        from: `"${appName}" <${this.GMAIL_USER}>`,
+        to: toEmail,
+        subject: `🔑 ${otp} is your ${appName} Verification Code`,
+        html: htmlContent,
+      });
+      console.log(`[EmailService] ✅ Emergency Gmail sent OTP to ${toEmail}. MessageId: ${info.messageId}`);
+      return true;
+    } catch (err: any) {
+      console.error(`[EmailService] ❌ Emergency Gmail also failed: ${err.message}`);
+      return false;
     }
 
     return false;
