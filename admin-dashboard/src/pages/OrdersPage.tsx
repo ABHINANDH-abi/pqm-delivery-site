@@ -29,27 +29,41 @@ export const OrdersPage: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<OrderStatus | 'ALL'>('ALL');
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [isAutoRefreshing, setIsAutoRefreshing] = useState<boolean>(false);
 
   // Selected Order for Detail Modal
   const [viewingOrder, setViewingOrder] = useState<Order | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (silent = false) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
+      else setIsAutoRefreshing(true);
       setError(null);
       const statusParam = selectedStatus === 'ALL' ? undefined : selectedStatus;
       const data = await ordersApi.getAll(statusParam);
       setOrders(data);
+      setLastRefreshed(new Date());
     } catch (err: any) {
       setError(err.response?.data?.error?.message || 'Failed to load orders');
     } finally {
       setLoading(false);
+      setIsAutoRefreshing(false);
     }
   };
 
+  // Initial fetch + re-fetch when tab changes
   useEffect(() => {
     fetchOrders();
+  }, [selectedStatus]);
+
+  // Auto-refresh every 15 seconds — new orders appear automatically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 15000);
+    return () => clearInterval(interval);
   }, [selectedStatus]);
 
   const handleUpdateStatus = async (orderId: string, nextStatus: OrderStatus) => {
@@ -196,18 +210,29 @@ export const OrdersPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-white flex items-center gap-2">
             <ShoppingBag className="w-7 h-7 text-amber-500" />
             Order Dispatch Center
+            {/* Live indicator */}
+            <span className="flex items-center gap-1.5 ml-2 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+              <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+              <span className="text-xs font-bold text-emerald-400">LIVE</span>
+            </span>
           </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Real-time order stream, status lifecycle controls, and kitchen dispatch manager
+          <p className="text-slate-400 text-sm mt-1 flex items-center gap-2">
+            Auto-refreshes every 15 seconds
+            {lastRefreshed && (
+              <span className="text-slate-500 text-xs">
+                · Last updated: {lastRefreshed.toLocaleTimeString()}
+                {isAutoRefreshing && <span className="ml-1 text-amber-400">↻ syncing...</span>}
+              </span>
+            )}
           </p>
         </div>
 
         <button
-          onClick={fetchOrders}
+          onClick={() => fetchOrders(false)}
           className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-xl transition border border-slate-700"
         >
-          <RefreshCw className="w-4 h-4 text-amber-400" />
-          Refresh Stream
+          <RefreshCw className={`w-4 h-4 text-amber-400 ${isAutoRefreshing ? 'animate-spin' : ''}`} />
+          Refresh Now
         </button>
       </div>
 
