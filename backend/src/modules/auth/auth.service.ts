@@ -3,8 +3,8 @@ import { prisma } from '../../config/database';
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../../utils/jwt';
 import { BadRequestError, ConflictError, UnauthorizedError, NotFoundError } from '../../utils/errors';
 import { RegisterInput, LoginInput } from './auth.validation';
-import { UserRole } from '../../../../shared/src/constants/roles';
-import { UserPublic } from '../../../../shared/src/types/user.types';
+import { UserRole } from '../../shared/constants/roles';
+import { UserPublic } from '../../shared/types/user.types';
 import { emailService } from '../../services/email.service';
 
 export interface AuthResult {

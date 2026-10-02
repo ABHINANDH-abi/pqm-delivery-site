@@ -8,4 +8,4 @@ export type {
   ApiResponse,
   PaginationMeta,
   PaginatedResponse,
-} from '../../../shared/src/types/api.types';
+} from '../shared/types/api.types';

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env';
-import { AuthTokenPayload } from '../../../shared/src/types/user.types';
-import { UserRole } from '../../../shared/src/constants/roles';
+import { AuthTokenPayload } from '../shared/types/user.types';
+import { UserRole } from '../shared/constants/roles';
 import { UnauthorizedError } from './errors';
 
 // ─── Access Token ─────────────────────────────────────────────────────────────

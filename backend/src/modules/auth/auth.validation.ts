@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { UserRole } from '../../../../shared/src/constants/roles';
+import { UserRole } from '../../shared/constants/roles';
 
 export const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(50, 'Name cannot exceed 50 characters'),

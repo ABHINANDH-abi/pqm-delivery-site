@@ -1,4 +1,4 @@
-import { UserRole } from '../../../shared/src/constants/roles';
+import { UserRole } from '../shared/constants/roles';
 
 // Extend Express Request to carry the authenticated user payload
 // after the auth middleware has verified the JWT.
