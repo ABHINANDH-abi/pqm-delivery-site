@@ -48,6 +48,7 @@ const globalRateLimiter = rateLimit({
   max: 100000,
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { trustProxy: false },
   skip: (req) => {
     const ip = req.ip || req.socket.remoteAddress || '';
     return (
