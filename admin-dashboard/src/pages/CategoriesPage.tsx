@@ -6,6 +6,8 @@ export const CategoriesPage: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Modal State
@@ -102,13 +104,18 @@ export const CategoriesPage: React.FC = () => {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete category "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete category "${name}"? This will also remove any food items in this category.`)) return;
 
+    setActionError(null);
+    setSuccessMessage(null);
     try {
       await categoriesApi.delete(id);
       setCategories((prev) => prev.filter((c) => c.id !== id));
+      setSuccessMessage(`Category "${name}" was deleted successfully.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
-      alert(err.response?.data?.error?.message || 'Failed to delete category');
+      const msg = err.response?.data?.error?.message || 'Failed to delete category';
+      setActionError(msg);
     }
   };
 
@@ -140,6 +147,27 @@ export const CategoriesPage: React.FC = () => {
           Add New Category
         </button>
       </div>
+
+      {/* Action Feedback Alerts */}
+      {actionError && (
+        <div className="p-4 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-center justify-between text-rose-300 text-sm shadow-lg">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button onClick={() => setActionError(null)} className="text-rose-400 hover:text-white text-xs px-2 py-1 font-bold">✕</button>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="p-4 bg-emerald-950/40 border border-emerald-800/60 rounded-xl flex items-center justify-between text-emerald-300 text-sm shadow-lg">
+          <div className="flex items-center gap-3">
+            <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>{successMessage}</span>
+          </div>
+          <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-white text-xs px-2 py-1 font-bold">✕</button>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="flex items-center gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">

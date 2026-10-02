@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, BadRequestError } from '../../utils/errors';
 import { CreateProductInput, UpdateProductInput } from './products.validation';
 
 export interface ProductFilters {
@@ -139,10 +139,29 @@ export class ProductsService {
   }
 
   /**
-   * Delete product
+   * Delete product (safely handles historical order references)
    */
   async deleteProduct(id: string) {
-    await this.getProductById(id);
+    const product = await this.getProductById(id);
+
+    // Check if the item is part of active orders currently in progress
+    const activeOrders = await prisma.order.count({
+      where: {
+        status: { in: ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'] },
+        items: { some: { productId: id } },
+      },
+    });
+
+    if (activeOrders > 0) {
+      throw new BadRequestError(
+        `Cannot delete "${product.name}" while ${activeOrders} order(s) are active in kitchen. Please complete or cancel the active orders first, or turn off the Availability toggle to stop new orders.`
+      );
+    }
+
+    // Clean up historical order item references so foreign key constraint is satisfied
+    await prisma.orderItem.deleteMany({
+      where: { productId: id },
+    });
 
     return prisma.product.delete({
       where: { id },

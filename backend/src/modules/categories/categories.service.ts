@@ -1,5 +1,5 @@
 import { prisma } from '../../config/database';
-import { NotFoundError } from '../../utils/errors';
+import { NotFoundError, BadRequestError } from '../../utils/errors';
 import { CreateCategoryInput, UpdateCategoryInput } from './categories.validation';
 
 export class CategoriesService {
@@ -67,10 +67,44 @@ export class CategoriesService {
   }
 
   /**
-   * Delete category
+   * Delete category (safely cleans up child products and order references)
    */
   async deleteCategory(id: string) {
-    await this.getCategoryById(id);
+    const category = await this.getCategoryById(id);
+
+    // Find all products in this category
+    const products = await prisma.product.findMany({
+      where: { categoryId: id },
+      select: { id: true, name: true },
+    });
+
+    const productIds = products.map((p) => p.id);
+
+    if (productIds.length > 0) {
+      // Check if any product has active kitchen orders
+      const activeOrders = await prisma.order.count({
+        where: {
+          status: { in: ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY'] },
+          items: { some: { productId: { in: productIds } } },
+        },
+      });
+
+      if (activeOrders > 0) {
+        throw new BadRequestError(
+          `Cannot delete category "${category.name}" because it contains items with ${activeOrders} active order(s) in progress.`
+        );
+      }
+
+      // Delete historical order item references for these products
+      await prisma.orderItem.deleteMany({
+        where: { productId: { in: productIds } },
+      });
+
+      // Delete all child products in this category
+      await prisma.product.deleteMany({
+        where: { categoryId: id },
+      });
+    }
 
     return prisma.category.delete({
       where: { id },

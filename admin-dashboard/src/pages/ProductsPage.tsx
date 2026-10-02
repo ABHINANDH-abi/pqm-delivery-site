@@ -1,13 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { productsApi, Product } from '../api/products.api';
 import { categoriesApi, Category } from '../api/categories.api';
-import { Plus, Edit2, Trash2, UtensilsCrossed, Search, Filter, ToggleLeft, ToggleRight, Loader2, AlertCircle, Leaf } from 'lucide-react';
+import { Plus, Edit2, Trash2, UtensilsCrossed, Search, Filter, ToggleLeft, ToggleRight, Loader2, AlertCircle, Leaf, CheckCircle } from 'lucide-react';
 
 export const ProductsPage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Filters
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -127,18 +129,23 @@ export const ProductsPage: React.FC = () => {
       setProducts((prev) =>
         prev.map((p) => (p.id === product.id ? { ...p, isAvailable: product.isAvailable } : p))
       );
-      setError(err.response?.data?.error?.message || 'Failed to update stock availability');
+      setActionError(err.response?.data?.error?.message || 'Failed to update stock availability');
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete food item "${name}"?`)) return;
+    if (!window.confirm(`Are you sure you want to delete food item "${name}" from the menu?`)) return;
 
+    setActionError(null);
+    setSuccessMessage(null);
     try {
       await productsApi.delete(id);
       setProducts((prev) => prev.filter((p) => p.id !== id));
+      setSuccessMessage(`"${name}" was deleted successfully.`);
+      setTimeout(() => setSuccessMessage(null), 4000);
     } catch (err: any) {
-      setError(err.response?.data?.error?.message || 'Failed to delete product');
+      const msg = err.response?.data?.error?.message || 'Failed to delete product';
+      setActionError(msg);
     }
   };
 
@@ -177,6 +184,27 @@ export const ProductsPage: React.FC = () => {
           Add Food Item
         </button>
       </div>
+
+      {/* Action Feedback Alerts */}
+      {actionError && (
+        <div className="p-4 bg-rose-950/40 border border-rose-800/60 rounded-xl flex items-center justify-between text-rose-300 text-sm shadow-lg">
+          <div className="flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+            <span>{actionError}</span>
+          </div>
+          <button onClick={() => setActionError(null)} className="text-rose-400 hover:text-white text-xs px-2 py-1 font-bold">✕</button>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="p-4 bg-emerald-950/40 border border-emerald-800/60 rounded-xl flex items-center justify-between text-emerald-300 text-sm shadow-lg">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+            <span>{successMessage}</span>
+          </div>
+          <button onClick={() => setSuccessMessage(null)} className="text-emerald-400 hover:text-white text-xs px-2 py-1 font-bold">✕</button>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="flex flex-col md:flex-row items-center gap-4 bg-slate-900/50 p-4 rounded-xl border border-slate-800">
