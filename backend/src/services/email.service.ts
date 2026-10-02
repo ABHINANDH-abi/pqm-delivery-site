@@ -63,13 +63,43 @@ class EmailService {
     logs.push(`Target recipient: ${toEmail}`);
     logs.push(`Gmail user: ${this.GMAIL_USER}`);
 
-    // Try Port 465
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (resendApiKey) {
+      try {
+        logs.push(`Testing Resend API (HTTPS)...`);
+        const resp = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: process.env.EMAIL_FROM || `PQM Kitchen <onboarding@resend.dev>`,
+            to: [toEmail],
+            subject: `🧪 PQM Diagnostic Test (${new Date().toLocaleTimeString()})`,
+            text: `Diagnostic test from production server via Resend HTTPS API. Working 100%!`,
+          }),
+        });
+        const resData: any = await resp.json();
+        if (resp.ok) {
+          logs.push(`Resend delivery SUCCESS! MessageId: ${resData?.id}`);
+          return { success: true, logs };
+        } else {
+          logs.push(`Resend response note: ${resData?.message}`);
+        }
+      } catch (errResend: any) {
+        logs.push(`Resend API error: ${errResend.message}`);
+      }
+    }
+
+    // Try Port 465 (with 3-second connection timeout so it doesn't hang)
     try {
-      logs.push(`Attempting port 465 SSL connection...`);
+      logs.push(`Attempting port 465 SSL connection (timeout: 3s)...`);
       const t465 = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 465,
         secure: true,
+        connectionTimeout: 3000,
         auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
       });
       await t465.verify();
@@ -192,13 +222,45 @@ class EmailService {
         if (response.ok) {
           console.log(`[EmailService] ✉️ OTP sent via Resend API to ${toEmail}. Resend ID: ${resData?.id}`);
           return true;
+        } else {
+          console.warn(`[EmailService] ⚠️ Resend note: ${resData?.message}`);
         }
       } catch (err: any) {
         console.warn(`[EmailService] Resend API note: ${err.message}`);
       }
     }
 
-    // 2. Primary Gmail SMTP Dispatch
+    // 2. Secondary HTTP REST Dispatch via Brevo API (if BREVO_API_KEY configured)
+    const brevoApiKey = process.env.BREVO_API_KEY;
+    if (brevoApiKey) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'api-key': brevoApiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: { name: appName, email: process.env.EMAIL_FROM || '6abhi6nad6@gmail.com' },
+            to: [{ email: toEmail }],
+            subject: `🔑 ${otp} is your ${appName} Verification Code`,
+            htmlContent,
+          }),
+        });
+
+        const resData: any = await response.json();
+        if (response.ok) {
+          console.log(`[EmailService] ✉️ OTP sent via Brevo HTTP API to ${toEmail}. MessageId: ${resData?.messageId}`);
+          return true;
+        } else {
+          console.warn(`[EmailService] Brevo HTTP note: ${JSON.stringify(resData)}`);
+        }
+      } catch (err: any) {
+        console.warn(`[EmailService] Brevo API note: ${err.message}`);
+      }
+    }
+
+    // 3. Primary Gmail SMTP Dispatch
     if (this.transporter) {
       try {
         const info = await this.transporter.sendMail({
@@ -220,6 +282,7 @@ class EmailService {
         host: 'smtp.gmail.com',
         port: 465,
         secure: true,
+        connectionTimeout: 4000,
         auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
       });
       const info = await directTransporter.sendMail({
@@ -240,6 +303,7 @@ class EmailService {
         host: 'smtp.gmail.com',
         port: 587,
         secure: false,
+        connectionTimeout: 4000,
         auth: { user: this.GMAIL_USER, pass: this.GMAIL_PASS },
       });
       const info = await tlsTransporter.sendMail({
