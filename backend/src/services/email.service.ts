@@ -230,36 +230,7 @@ class EmailService {
       </html>
     `;
 
-    // 1. Primary HTTP REST Dispatch via Resend API (if RESEND_API_KEY configured)
-    if (resendApiKey) {
-      try {
-        const response = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            from: process.env.EMAIL_FROM || `${appName} <onboarding@resend.dev>`,
-            to: [toEmail],
-            subject: `🔑 ${otp} is your ${appName} Verification Code`,
-            html: htmlContent,
-          }),
-        });
-
-        const resData: any = await response.json();
-        if (response.ok) {
-          console.log(`[EmailService] ✉️ OTP sent via Resend API to ${toEmail}. Resend ID: ${resData?.id}`);
-          return true;
-        } else {
-          console.warn(`[EmailService] ⚠️ Resend note: ${resData?.message}`);
-        }
-      } catch (err: any) {
-        console.warn(`[EmailService] Resend API note: ${err.message}`);
-      }
-    }
-
-    // 2. Secondary HTTP REST Dispatch via Brevo API (if BREVO_API_KEY configured)
+    // 1. Primary HTTP REST Dispatch via Brevo API (if BREVO_API_KEY configured)
     if (brevoApiKey) {
       try {
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -285,6 +256,35 @@ class EmailService {
         }
       } catch (err: any) {
         console.warn(`[EmailService] Brevo API note: ${err.message}`);
+      }
+    }
+
+    // 2. Secondary HTTP REST Dispatch via Resend API (if RESEND_API_KEY configured)
+    if (resendApiKey) {
+      try {
+        const response = await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${resendApiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            from: process.env.EMAIL_FROM || `${appName} <onboarding@resend.dev>`,
+            to: [toEmail],
+            subject: `🔑 ${otp} is your ${appName} Verification Code`,
+            html: htmlContent,
+          }),
+        });
+
+        const resData: any = await response.json();
+        if (response.ok) {
+          console.log(`[EmailService] ✉️ OTP sent via Resend API to ${toEmail}. Resend ID: ${resData?.id}`);
+          return true;
+        } else {
+          console.warn(`[EmailService] ⚠️ Resend note: ${resData?.message}`);
+        }
+      } catch (err: any) {
+        console.warn(`[EmailService] Resend API note: ${err.message}`);
       }
     }
 
