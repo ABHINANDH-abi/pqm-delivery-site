@@ -8,6 +8,8 @@
     "start": "cd backend && npx prisma db push --accept-data-loss && npx ts-node --transpile-only prisma/seed.ts && npx ts-node --transpile-only src/server.ts"
   },
   "dependencies": {
+    "@prisma/client": "^5.14.0",
+    "prisma": "^5.14.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
