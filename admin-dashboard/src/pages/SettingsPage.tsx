@@ -9,16 +9,16 @@ export const SettingsPage: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    restaurantName: 'Qureshi Mandi Coimbatore',
+    restaurantName: 'PQM Delivery',
     phone: '+91 98765 43210',
     email: 'contact@qureshimandi.com',
     address: '12, Qureshi Mandi Road, Coimbatore, Tamil Nadu 641001',
     openingHours: '11:00 AM - 11:00 PM',
-    taxRatePercent: 5,
+    taxRatePercent: 0,
     flatDeliveryFee: 50,
     isAcceptingOrders: true,
-    merchantUpiId: 'abinandanil12@oksbi',
-    payeeName: 'Qureshi Mandi Coimbatore',
+    merchantUpiId: 'jaleel-2@okicici',
+    payeeName: 'PQM Delivery',
     bankAccountNumber: '923010045892147',
     bankIfscCode: 'UTIB0001892',
   });
