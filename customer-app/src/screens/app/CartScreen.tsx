@@ -82,7 +82,7 @@ export default function CartScreen({ navigation }: Props) {
       // 2. Direct Google Pay / UPI Intent launch showing exact bill total
       if (paymentMethod === 'UPI_GPAY') {
         const orderShortId = order.id ? order.id.slice(-6) : 'QM';
-        const upiUrl = `upi://pay?pa=qureshimandi@upi&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+        const upiUrl = `upi://pay?pa=jaleel-2@okicici&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
 
         try {
           const supported = await Linking.canOpenURL(upiUrl);
@@ -90,13 +90,13 @@ export default function CartScreen({ navigation }: Props) {
             await Linking.openURL(upiUrl);
           } else {
             // Fallback try direct gpay:// scheme
-            const gpayUrl = `gpay://upi/pay?pa=qureshimandi@upi&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+            const gpayUrl = `gpay://upi/pay?pa=jaleel-2@okicici&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
             await Linking.openURL(gpayUrl);
           }
         } catch {
           Alert.alert(
             'Online UPI Payment',
-            `Order #${orderShortId} created!\n\nPlease complete your ₹${total} payment to UPI ID:\nqureshimandi@upi`,
+            `Order #${orderShortId} created!\n\nPlease complete your ₹${total} payment to UPI ID:\njaleel-2@okicici`,
           );
         }
       } else if (paymentMethod === 'RAZORPAY') {

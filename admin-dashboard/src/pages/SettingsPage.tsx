@@ -14,7 +14,7 @@ export const SettingsPage: React.FC = () => {
     taxRatePercent: 5,
     flatDeliveryFee: 50,
     isAcceptingOrders: true,
-    merchantUpiId: 'qureshimandi@upi',
+    merchantUpiId: 'jaleel-2@okicici',
     payeeName: 'Qureshi Mandi Coimbatore',
     bankAccountNumber: '923010045892147',
     bankIfscCode: 'UTIB0001892',
