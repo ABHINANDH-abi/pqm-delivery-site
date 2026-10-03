@@ -304,3 +304,24 @@ model Notification {
   @@index([isRead])
   @@map("notifications")
 }
+
+model RestaurantSetting {
+  id                String   @id @default("default")
+  restaurantName    String   @default("Qureshi Mandi Coimbatore")
+  phone             String   @default("+91 98765 43210")
+  email             String   @default("contact@qureshimandi.com")
+  address           String   @default("12, Qureshi Mandi Road, Coimbatore, Tamil Nadu 641001")
+  openingHours      String   @default("11:00 AM - 11:00 PM")
+  taxRatePercent    Int      @default(5)
+  flatDeliveryFee   Int      @default(50)
+  isAcceptingOrders Boolean  @default(true)
+  merchantUpiId     String   @default("abinandanil12@oksbi")
+  payeeName         String   @default("Qureshi Mandi Coimbatore")
+  bankAccountNumber String?
+  bankIfscCode      String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("restaurant_settings")
+}
+

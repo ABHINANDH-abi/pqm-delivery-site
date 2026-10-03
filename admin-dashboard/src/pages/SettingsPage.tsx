@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { Settings, Store, Clock, Save, Check } from 'lucide-react';
+import { Settings, Store, Clock, Save, Check, Loader2 } from 'lucide-react';
+import { settingsApi } from '../api/settings.api';
 
 const STORAGE_KEY_SETTINGS = 'rd_admin_restaurant_settings';
 
 export const SettingsPage: React.FC = () => {
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     restaurantName: 'Qureshi Mandi Coimbatore',
     phone: '+91 98765 43210',
@@ -14,33 +17,62 @@ export const SettingsPage: React.FC = () => {
     taxRatePercent: 5,
     flatDeliveryFee: 50,
     isAcceptingOrders: true,
-    merchantUpiId: 'jaleel-2@okicici',
+    merchantUpiId: 'abinandanil12@oksbi',
     payeeName: 'Qureshi Mandi Coimbatore',
     bankAccountNumber: '923010045892147',
     bankIfscCode: 'UTIB0001892',
   });
 
-  // Load saved settings on mount
+  // Load saved settings from Cloud Database on mount
   useEffect(() => {
-    try {
-      const savedData = localStorage.getItem(STORAGE_KEY_SETTINGS);
-      if (savedData) {
-        const parsed = JSON.parse(savedData);
-        setFormData((prev) => ({ ...prev, ...parsed }));
+    const loadSettings = async () => {
+      try {
+        setLoading(true);
+        const cloudData = await settingsApi.getSettings();
+        if (cloudData) {
+          setFormData((prev) => ({ ...prev, ...cloudData }));
+          localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(cloudData));
+          return;
+        }
+      } catch (err) {
+        console.log('Error fetching cloud settings, falling back to local:', err);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.log('Error loading saved settings:', err);
-    }
+
+      try {
+        const savedData = localStorage.getItem(STORAGE_KEY_SETTINGS);
+        if (savedData) {
+          const parsed = JSON.parse(savedData);
+          setFormData((prev) => ({ ...prev, ...parsed }));
+        }
+      } catch (err) {
+        console.log('Error loading saved settings:', err);
+      }
+    };
+
+    loadSettings();
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSaving(true);
+      // Save directly to cloud PostgreSQL database
+      const updated = await settingsApi.updateSettings(formData);
+      if (updated) {
+        setFormData((prev) => ({ ...prev, ...updated }));
+      }
       localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(formData));
       setSaved(true);
       setTimeout(() => setSaved(false), 4000);
-    } catch (err) {
-      alert('Failed to save settings to storage');
+    } catch (err: any) {
+      console.error('Failed to sync settings with server:', err);
+      localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(formData));
+      setSaved(true);
+      setTimeout(() => setSaved(false), 4000);
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -226,9 +258,18 @@ export const SettingsPage: React.FC = () => {
         <div className="flex justify-end">
           <button
             type="submit"
-            className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-sm rounded-xl transition shadow-lg shadow-amber-500/20 active:scale-95"
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-slate-950 font-bold text-sm rounded-xl transition shadow-lg shadow-amber-500/20 active:scale-95 cursor-pointer"
           >
-            <Save className="w-4 h-4" /> Save Restaurant Settings
+            {saving ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" /> Saving to Cloud Server...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" /> Save Restaurant Settings
+              </>
+            )}
           </button>
         </div>
       </form>

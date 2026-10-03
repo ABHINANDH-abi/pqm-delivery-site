@@ -19,6 +19,7 @@ import deliveryRoutes from './modules/delivery/delivery.routes';
 import paymentRoutes from './modules/payments/payments.routes';
 import adminRoutes from './modules/admin/admin.routes';
 import notificationRoutes from './modules/notifications/notifications.routes';
+import settingsRoutes from './modules/settings/settings.routes';
 
 const app = express();
 
@@ -121,6 +122,7 @@ app.use(`${API_PREFIX}/delivery`, deliveryRoutes);
 app.use(`${API_PREFIX}/payments`, paymentRoutes);
 app.use(`${API_PREFIX}/notifications`, notificationRoutes);
 app.use(`${API_PREFIX}/admin`, adminRoutes);
+app.use(`${API_PREFIX}/settings`, settingsRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────────────
 

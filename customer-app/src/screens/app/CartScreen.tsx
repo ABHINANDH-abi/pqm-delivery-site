@@ -16,6 +16,7 @@ import { useCartStore } from '../../store/cart.store';
 import { addressApi, Address } from '../../api/address.api';
 import { ordersApi } from '../../api/orders.api';
 import { paymentsApi } from '../../api/payments.api';
+import { settingsApi, RestaurantSettings } from '../../api/settings.api';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AppStackParamList } from '../../navigation/AppNavigator';
 
@@ -38,6 +39,16 @@ export default function CartScreen({ navigation }: Props) {
   const [paymentMethod, setPaymentMethod] = useState<'CASH_ON_DELIVERY' | 'UPI_GPAY' | 'RAZORPAY'>('UPI_GPAY');
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState<boolean>(false);
+  const [storeSettings, setStoreSettings] = useState<RestaurantSettings | null>(null);
+
+  const fetchStoreSettings = async () => {
+    try {
+      const s = await settingsApi.getSettings();
+      if (s) setStoreSettings(s);
+    } catch (err) {
+      console.log('Failed to fetch store settings:', err);
+    }
+  };
 
   const fetchAddresses = async () => {
     try {
@@ -51,8 +62,10 @@ export default function CartScreen({ navigation }: Props) {
   };
 
   useEffect(() => {
+    fetchStoreSettings();
     const unsubscribe = navigation.addListener('focus', () => {
       fetchAddresses();
+      fetchStoreSettings();
     });
     return unsubscribe;
   }, [navigation]);
@@ -82,7 +95,23 @@ export default function CartScreen({ navigation }: Props) {
       // 2. Direct Google Pay / UPI Intent launch showing exact bill total
       if (paymentMethod === 'UPI_GPAY') {
         const orderShortId = order.id ? order.id.slice(-6) : 'QM';
-        const upiUrl = `upi://pay?pa=jaleel-2@okicici&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+
+        // Read dynamically from live store settings
+        let currentSettings = storeSettings;
+        if (!currentSettings?.merchantUpiId) {
+          try {
+            currentSettings = await settingsApi.getSettings();
+            if (currentSettings) setStoreSettings(currentSettings);
+          } catch {
+            // fallback if network issue
+          }
+        }
+
+        const targetUpiId = (currentSettings?.merchantUpiId || 'abinandanil12@oksbi').trim();
+        const targetPayeeName = (currentSettings?.payeeName || 'Qureshi Mandi Coimbatore').trim();
+        const encodedPayeeName = encodeURIComponent(targetPayeeName);
+
+        const upiUrl = `upi://pay?pa=${targetUpiId}&pn=${encodedPayeeName}&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
 
         try {
           const supported = await Linking.canOpenURL(upiUrl);
@@ -90,13 +119,13 @@ export default function CartScreen({ navigation }: Props) {
             await Linking.openURL(upiUrl);
           } else {
             // Fallback try direct gpay:// scheme
-            const gpayUrl = `gpay://upi/pay?pa=jaleel-2@okicici&pn=Qureshi%20Mandi%20Coimbatore&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+            const gpayUrl = `gpay://upi/pay?pa=${targetUpiId}&pn=${encodedPayeeName}&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
             await Linking.openURL(gpayUrl);
           }
         } catch {
           Alert.alert(
             'Online UPI Payment',
-            `Order #${orderShortId} created!\n\nPlease complete your ₹${total} payment to UPI ID:\njaleel-2@okicici`,
+            `Order #${orderShortId} created!\n\nPlease complete your ₹${total} payment to UPI ID:\n${targetUpiId}\n(${targetPayeeName})`,
           );
         }
       } else if (paymentMethod === 'RAZORPAY') {
@@ -243,7 +272,7 @@ export default function CartScreen({ navigation }: Props) {
                 <Text style={styles.paymentEmoji}>⚡</Text>
                 <View style={styles.paymentDetails}>
                   <Text style={styles.paymentTitle}>Google Pay / PhonePe / UPI</Text>
-                  <Text style={styles.paymentSub}>Instant redirect to GPay with exact bill amount</Text>
+                  <Text style={styles.paymentSub}>Pay to {storeSettings?.merchantUpiId || 'UPI'} • GPay / PhonePe</Text>
                 </View>
                 <View
                   style={[
