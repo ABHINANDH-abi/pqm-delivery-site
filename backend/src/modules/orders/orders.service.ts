@@ -94,10 +94,20 @@ export class OrdersService {
       };
     });
 
-    const deliveryFee = calculateKmDeliveryFee(address.latitude, address.longitude);
+    // Fetch store configured delivery fee (from restaurant_settings, default 50)
+    let deliveryFee = 50;
+    try {
+      const settings = await prisma.restaurantSetting.findUnique({ where: { id: 'default' } });
+      if (settings?.flatDeliveryFee !== undefined) {
+        deliveryFee = settings.flatDeliveryFee;
+      }
+    } catch {
+      deliveryFee = 50;
+    }
+
     const discountAmount = 0;
-    const taxAmount = Math.round(subtotal * TAX_RATE);
-    const totalAmount = subtotal + deliveryFee + taxAmount - discountAmount;
+    const taxAmount = 0; // GST and packaging fees completely removed
+    const totalAmount = subtotal + deliveryFee - discountAmount;
 
     // 4. Address snapshot text
     const addressText = `${address.label}: ${address.addressLine1}${
@@ -439,8 +449,8 @@ export class OrdersService {
       }
     }
 
-    const taxAmount = Math.round(subtotal * TAX_RATE);
-    const totalAmount = subtotal + deliveryFee + taxAmount;
+    const taxAmount = 0; // GST removed
+    const totalAmount = subtotal + deliveryFee;
 
     return prisma.order.update({
       where: { id: orderId },

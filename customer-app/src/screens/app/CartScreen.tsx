@@ -71,9 +71,8 @@ export default function CartScreen({ navigation }: Props) {
   }, [navigation]);
 
   const subtotal = getSubtotal();
-  const deliveryFee = getDeliveryFee();
-  const taxes = getTaxesAndCharges();
-  const total = getTotal();
+  const deliveryFee = subtotal > 0 ? (storeSettings?.flatDeliveryFee !== undefined ? storeSettings.flatDeliveryFee : 50) : 0;
+  const total = subtotal > 0 ? subtotal + deliveryFee : 0;
 
   const handlePlaceOrder = async () => {
     if (!selectedAddress) {
@@ -95,6 +94,7 @@ export default function CartScreen({ navigation }: Props) {
       // 2. Direct Google Pay / UPI Intent launch showing exact bill total
       if (paymentMethod === 'UPI_GPAY') {
         const orderShortId = order.id ? order.id.slice(-6) : 'QM';
+        const finalPayAmount = order.totalAmount ? Number(order.totalAmount) : total;
 
         // Read dynamically from live store settings
         let currentSettings = storeSettings;
@@ -111,7 +111,7 @@ export default function CartScreen({ navigation }: Props) {
         const targetPayeeName = (currentSettings?.payeeName || 'Qureshi Mandi Coimbatore').trim();
         const encodedPayeeName = encodeURIComponent(targetPayeeName);
 
-        const upiUrl = `upi://pay?pa=${targetUpiId}&pn=${encodedPayeeName}&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+        const upiUrl = `upi://pay?pa=${targetUpiId}&pn=${encodedPayeeName}&am=${finalPayAmount}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
 
         try {
           const supported = await Linking.canOpenURL(upiUrl);
@@ -119,13 +119,13 @@ export default function CartScreen({ navigation }: Props) {
             await Linking.openURL(upiUrl);
           } else {
             // Fallback try direct gpay:// scheme
-            const gpayUrl = `gpay://upi/pay?pa=${targetUpiId}&pn=${encodedPayeeName}&am=${total}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
+            const gpayUrl = `gpay://upi/pay?pa=${targetUpiId}&pn=${encodedPayeeName}&am=${finalPayAmount}&cu=INR&tn=Food%20Order%20%23${orderShortId}`;
             await Linking.openURL(gpayUrl);
           }
         } catch {
           Alert.alert(
             'Online UPI Payment',
-            `Order #${orderShortId} created!\n\nPlease complete your ₹${total} payment to UPI ID:\n${targetUpiId}\n(${targetPayeeName})`,
+            `Order #${orderShortId} created!\n\nPlease complete your ₹${finalPayAmount} payment to UPI ID:\n${targetUpiId}\n(${targetPayeeName})`,
           );
         }
       } else if (paymentMethod === 'RAZORPAY') {
@@ -344,16 +344,8 @@ export default function CartScreen({ navigation }: Props) {
                 <Text style={styles.billValue}>₹{subtotal}</Text>
               </View>
               <View style={styles.billRow}>
-                <Text style={styles.billLabel}>Distance Delivery Fee (@ ₹20/km)</Text>
+                <Text style={styles.billLabel}>Delivery Fee</Text>
                 <Text style={styles.billValue}>₹{deliveryFee}</Text>
-              </View>
-              <View style={styles.billRow}>
-                <Text style={styles.billLabel}>Restaurant Packaging & Safety Fee</Text>
-                <Text style={styles.billValue}>₹15</Text>
-              </View>
-              <View style={styles.billRow}>
-                <Text style={styles.billLabel}>GST & Govt Taxes (5%)</Text>
-                <Text style={styles.billValue}>₹{taxes}</Text>
               </View>
 
               <View style={styles.divider} />
@@ -362,7 +354,7 @@ export default function CartScreen({ navigation }: Props) {
                 <Text style={styles.totalLabel}>
                   To Pay ({paymentMethod === 'CASH_ON_DELIVERY' ? 'Cash on Delivery' : 'Online UPI'})
                 </Text>
-                <Text style={styles.totalValue}>₹{total + 15}</Text>
+                <Text style={styles.totalValue}>₹{total}</Text>
               </View>
             </View>
           </View>
@@ -394,12 +386,12 @@ export default function CartScreen({ navigation }: Props) {
         </View>
       )}
 
-      {/* Zomato-Style Detailed Taxes & Charges Receipt Modal */}
+      {/* Clean Bill Breakdown Modal */}
       <Modal visible={isReceiptModalOpen} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.85)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <View style={{ backgroundColor: '#1E293B', borderRadius: 20, padding: 24, width: '100%', maxWidth: 400, borderWidth: 1, borderColor: '#334155' }}>
             <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '800', textAlign: 'center', marginBottom: 4 }}>
-              📄 Itemized Tax & Charge Receipt
+              📄 Official Bill Receipt
             </Text>
             <Text style={{ color: '#94A3B8', fontSize: 12, textAlign: 'center', marginBottom: 20 }}>
               Official Bill Breakdown for Qureshi Mandi Kitchen
@@ -411,26 +403,16 @@ export default function CartScreen({ navigation }: Props) {
                 <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{subtotal}</Text>
               </View>
 
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>Distance Delivery (@ ₹20/km)</Text>
-                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{deliveryFee}</Text>
-              </View>
-
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
-                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>Restaurant Packaging & Hygiene</Text>
-                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹15</Text>
-              </View>
-
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 }}>
-                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>GST & Govt Food Taxes (5%)</Text>
-                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{taxes}</Text>
+                <Text style={{ color: '#CBD5E1', fontSize: 13 }}>Delivery Fee</Text>
+                <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 13 }}>₹{deliveryFee}</Text>
               </View>
 
               <View style={{ height: 1, backgroundColor: '#334155', marginVertical: 8 }} />
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <Text style={{ color: '#F59E0B', fontWeight: '800', fontSize: 14 }}>Total Order Amount</Text>
-                <Text style={{ color: '#F59E0B', fontWeight: '900', fontSize: 18 }}>₹{total + 15}</Text>
+                <Text style={{ color: '#F59E0B', fontWeight: '900', fontSize: 18 }}>₹{total}</Text>
               </View>
             </View>
 
